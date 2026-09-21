@@ -1,0 +1,896 @@
+// Wall Texture & Decorative Surface CRM — Prisma Schema
+// Database: MySQL (XAMPP) — see .env DATABASE_URL
+// Conventions: UUID primary keys, soft delete (deletedAt), createdAt/updatedAt on every table,
+// optional createdById/updatedById audit columns (loose reference to users.id, not an FK —
+// keeps the User model free of dozens of back-relations while remaining fully queryable).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL_MEDIA
+  WALK_IN
+  PHONE_CALL
+  ADVERTISEMENT
+  EXHIBITION
+  OTHER
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  SITE_VISIT_SCHEDULED
+  SITE_VISIT_DONE
+  QUOTATION_SENT
+  NEGOTIATION
+  WON
+  LOST
+  ON_HOLD
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  SITE_VISIT
+  FOLLOW_UP
+  STATUS_CHANGE
+  QUOTATION
+  MEETING
+  OTHER
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  VIEWED
+  APPROVED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+enum QuotationTemplateCode {
+  TIME_FOR_TEXTURE
+  ARTIQUE_SURFACE
+  MODERN_MINIMAL
+  LUXURY_TEXTURE
+  CLASSIC
+  TFT_CLASSIC
+  TFT_MINIMAL
+  TFT_LUXURY
+}
+
+enum ExpenseCategory {
+  MATERIAL
+  LABOUR
+  TRANSPORTATION
+  TOOLS
+  CONTRACTOR
+  ELECTRICITY
+  MISCELLANEOUS
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+  CARD
+  OTHER
+}
+
+enum PhotoStage {
+  BEFORE
+  DURING
+  FINISHED
+  DETAIL
+  OTHER
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ProjectStatus {
+  PENDING
+  STARTED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum GalleryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum GalleryType {
+  PORTFOLIO
+  DESIGN
+}
+
+enum WhatsAppSessionStatus {
+  DISCONNECTED
+  INITIALIZING
+  QR_PENDING
+  CONNECTED
+  AUTH_FAILED
+}
+
+enum WhatsAppMessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum WhatsAppMessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  QUOTATION_PDF
+  GALLERY_IMAGE
+}
+
+enum WhatsAppMessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum NotificationType {
+  LEAD_FOLLOWUP
+  QUOTATION_REMINDER
+  PROJECT_STATUS
+  WHATSAPP_ALERT
+  SYSTEM
+}
+
+enum SettingCategory {
+  WHATSAPP
+  SMTP
+  GENERAL
+}
+
+enum BackupStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  APPROVE
+  REJECT
+  EXPORT
+  RESTORE
+  OTHER
+}
+
+// ============================================================================
+// USERS & AUTH
+// ============================================================================
+
+model User {
+  id                     String    @id @default(uuid()) @db.VarChar(36)
+  name                   String    @db.VarChar(150)
+  email                  String    @unique @db.VarChar(150)
+  password               String    @db.VarChar(255)
+  phone                  String?   @db.VarChar(20)
+  avatarUrl              String?   @db.VarChar(500)
+  isActive               Boolean   @default(true)
+  lastLoginAt            DateTime?
+  passwordResetToken     String?   @db.VarChar(255)
+  passwordResetExpiresAt DateTime?
+  refreshTokenHash       String?   @db.VarChar(255)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  notifications Notification[]
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// ============================================================================
+// CUSTOMER / LEAD
+// ============================================================================
+
+model Customer {
+  id            String       @id @default(uuid()) @db.VarChar(36)
+  customerName  String       @db.VarChar(150)
+  companyName   String?      @db.VarChar(150)
+  phone         String       @db.VarChar(20)
+  whatsapp      String?      @db.VarChar(20)
+  email         String?      @db.VarChar(150)
+  gstNumber     String?      @db.VarChar(20)
+  address       String?      @db.Text
+  city          String?      @db.VarChar(100)
+  state         String?      @db.VarChar(100)
+  pinCode       String?      @db.VarChar(10)
+  leadSource    LeadSource   @default(OTHER)
+  referredBy    String?      @db.VarChar(150)
+  requirement   String?      @db.Text
+  priority      LeadPriority @default(MEDIUM)
+  status        LeadStatus   @default(NEW)
+  followUpDate  DateTime?
+  siteVisitDate DateTime?
+  remarks       String?      @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  activities       CustomerActivity[]
+  quotations       Quotation[]
+  projects         ProjectTracking[]
+  whatsappMessages WhatsAppMessage[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([leadSource])
+  @@index([followUpDate])
+  @@index([siteVisitDate])
+  @@index([phone])
+  @@index([customerName])
+  @@index([deletedAt])
+  @@map("customers")
+}
+
+model CustomerActivity {
+  id           String       @id @default(uuid()) @db.VarChar(36)
+  customerId   String       @db.VarChar(36)
+  type         ActivityType @default(NOTE)
+  title        String       @db.VarChar(200)
+  description  String?      @db.Text
+  activityDate DateTime     @default(now())
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([type])
+  @@index([activityDate])
+  @@map("customer_activities")
+}
+
+// ============================================================================
+// QUOTATION
+// ============================================================================
+
+model QuotationTemplate {
+  id              String                @id @default(uuid()) @db.VarChar(36)
+  name            String                @db.VarChar(150)
+  code            QuotationTemplateCode @unique
+  description     String?               @db.Text
+  previewImageUrl String?               @db.VarChar(500)
+  isActive        Boolean               @default(true)
+  isDefault       Boolean               @default(false)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  quotations Quotation[]
+
+  @@map("quotation_templates")
+}
+
+model Quotation {
+  id              String          @id @default(uuid()) @db.VarChar(36)
+  quotationNumber String          @unique @db.VarChar(50)
+  customerId      String          @db.VarChar(36)
+  projectName     String          @db.VarChar(200)
+  templateId      String          @db.VarChar(36)
+  status          QuotationStatus @default(DRAFT)
+
+  quotationDate DateTime  @default(now())
+  validUntil    DateTime?
+
+  subTotal              Decimal      @default(0) @db.Decimal(12, 2)
+  discountType          DiscountType @default(PERCENTAGE)
+  discountValue         Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount        Decimal      @default(0) @db.Decimal(12, 2)
+  gstEnabled            Boolean      @default(false)
+  gstPercentage         Decimal      @default(0) @db.Decimal(5, 2)
+  gstAmount             Decimal      @default(0) @db.Decimal(12, 2)
+  transportationCharges Decimal      @default(0) @db.Decimal(12, 2)
+  installationCharges   Decimal      @default(0) @db.Decimal(12, 2)
+  additionalCharges     Decimal      @default(0) @db.Decimal(12, 2)
+  grandTotal            Decimal      @default(0) @db.Decimal(12, 2)
+
+  termsConditions String? @db.Text
+  notes           String? @db.Text
+  signatureUrl    String? @db.VarChar(500)
+
+  /// Advance amount the customer must pay to confirm the order (0 = none required).
+  advanceRequired Decimal @default(0) @db.Decimal(12, 2)
+
+  version         Int     @default(1)
+  rootQuotationId String? @db.VarChar(36)
+
+  approvedAt           DateTime?
+  approvedById         String?   @db.VarChar(36)
+  rejectedAt           DateTime?
+  rejectedById         String?   @db.VarChar(36)
+  rejectionReason      String?   @db.Text
+  convertedToProjectAt DateTime?
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer         Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  template         QuotationTemplate   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  items            QuotationItem[]
+  revisions        QuotationRevision[]
+  project          ProjectTracking?
+  whatsappMessages WhatsAppMessage[]
+  payments         ProjectPayment[]
+
+  @@index([customerId])
+  @@index([templateId])
+  @@index([status])
+  @@index([quotationNumber])
+  @@index([rootQuotationId])
+  @@index([deletedAt])
+  @@map("quotations")
+}
+
+model QuotationItem {
+  materials   ProjectMaterial[]
+  id          String            @id @default(uuid()) @db.VarChar(36)
+  quotationId String            @db.VarChar(36)
+  srNo        Int               @default(1)
+  productName String            @db.VarChar(200)
+  description String?           @db.Text
+  measurement String?           @db.VarChar(150)
+  sqft        Decimal           @default(0) @db.Decimal(10, 2)
+  rate        Decimal           @default(0) @db.Decimal(12, 2)
+  amount      Decimal           @default(0) @db.Decimal(12, 2)
+  sortOrder   Int               @default(0)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@index([productName])
+  @@map("quotation_items")
+}
+
+model QuotationRevision {
+  id            String  @id @default(uuid()) @db.VarChar(36)
+  quotationId   String  @db.VarChar(36)
+  versionNumber Int
+  snapshot      Json
+  changeNote    String? @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@map("quotation_revisions")
+}
+
+// ============================================================================
+// PROJECT WORK TRACKING
+// ============================================================================
+
+model ProjectTracking {
+  id          String @id @default(uuid()) @db.VarChar(36)
+  projectName String @db.VarChar(200)
+  customerId  String @db.VarChar(36)
+  quotationId String @unique @db.VarChar(36)
+
+  startDate              DateTime?
+  expectedCompletionDate DateTime?
+  actualCompletionDate   DateTime?
+  status                 ProjectStatus @default(PENDING)
+  assignedTeam           String?       @db.VarChar(255)
+  progressPercentage     Int           @default(0)
+  currentStage           String?       @db.VarChar(150)
+  remarks                String?       @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  customer  Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+
+  expenses     ProjectExpense[]
+  materials    ProjectMaterial[]
+  colors       ProjectColor[]
+  photos       ProjectPhoto[]
+  activities   ProjectActivity[]
+  payments     ProjectPayment[]
+  galleryEntry Gallery?
+
+  @@index([customerId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("project_tracking")
+}
+
+// ============================================================================
+// GALLERY
+// ============================================================================
+
+model GalleryCategory {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  name        String  @unique @db.VarChar(100)
+  slug        String  @unique @db.VarChar(120)
+  description String? @db.Text
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  images Gallery[]
+
+  @@map("gallery_categories")
+}
+
+model Gallery {
+  id           String        @id @default(uuid()) @db.VarChar(36)
+  title        String        @db.VarChar(200)
+  /// PORTFOLIO = a completed project shown as "recent work" (villa, apartment...) — no
+  /// category, it's one specific job, not a catalog entry;
+  /// DESIGN = a texture/material/finish catalog entry (e.g. "Texture coats", "Wood slat panels")
+  /// — always belongs to a category. Both share the same image plumbing so a public site
+  /// can render either from this one table.
+  type         GalleryType   @default(PORTFOLIO)
+  categoryId   String?       @db.VarChar(36)
+  description  String?       @db.Text
+  /// Short secondary line — e.g. "Roman clay, 4 rooms · 2025" for a portfolio piece.
+  subtitle     String?       @db.VarChar(255)
+  /// JSON-encoded string array of material/texture tags — e.g. ["Teak","White Oak","Ash"].
+  tags         String?       @db.Text
+  imageUrl     String        @db.VarChar(500)
+  thumbnailUrl String?       @db.VarChar(500)
+  isFeatured   Boolean       @default(false)
+  sortOrder    Int           @default(0)
+  status       GalleryStatus @default(ACTIVE)
+
+  /// Set when this entry was published from a completed project (one entry per project).
+  projectId     String?   @unique @db.VarChar(36)
+  completedAt   DateTime?
+  /// JSON-encoded snapshot of materials / colors used, so the public gallery needs no joins.
+  materialsUsed String?   @db.Text
+  colorsUsed    String?   @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  category         GalleryCategory?  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  project          ProjectTracking?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  photos           GalleryPhoto[]
+  whatsappMessages WhatsAppMessage[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([type])
+  @@map("gallery")
+}
+
+model GalleryPhoto {
+  id           String  @id @default(uuid()) @db.VarChar(36)
+  galleryId    String  @db.VarChar(36)
+  fileUrl      String  @db.VarChar(500)
+  thumbnailUrl String? @db.VarChar(500)
+  caption      String? @db.VarChar(255)
+  sortOrder    Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  gallery Gallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  @@index([galleryId])
+  @@map("gallery_photos")
+}
+
+// ============================================================================
+// PROJECT MANAGEMENT (expenses, materials, colors, photos, activity, payments)
+// ============================================================================
+
+model ProjectExpense {
+  id            String          @id @default(uuid()) @db.VarChar(36)
+  projectId     String          @db.VarChar(36)
+  expenseDate   DateTime        @default(now())
+  category      ExpenseCategory @default(MISCELLANEOUS)
+  description   String          @db.VarChar(255)
+  amount        Decimal         @default(0) @db.Decimal(12, 2)
+  paidBy        String?         @db.VarChar(150)
+  vendor        String?         @db.VarChar(200)
+  paymentMethod PaymentMethod?
+  notes         String?         @db.Text
+  receiptUrl    String?         @db.VarChar(500)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  project ProjectTracking @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, expenseDate])
+  @@index([category])
+  @@index([deletedAt])
+  @@map("project_expenses")
+}
+
+model ProjectMaterial {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  projectId       String   @db.VarChar(36)
+  /// Optional link back to the quotation line this material fulfils.
+  quotationItemId String?  @db.VarChar(36)
+  name            String   @db.VarChar(200)
+  brand           String?  @db.VarChar(150)
+  quantity        Decimal  @default(0) @db.Decimal(12, 2)
+  unit            String   @default("Sq.ft") @db.VarChar(30)
+  rate            Decimal? @db.Decimal(12, 2)
+  description     String?  @db.Text
+  notes           String?  @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  project       ProjectTracking @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  quotationItem QuotationItem?  @relation(fields: [quotationItemId], references: [id], onDelete: SetNull)
+  photos        ProjectPhoto[]
+
+  @@index([projectId])
+  @@index([quotationItemId])
+  @@index([deletedAt])
+  @@map("project_materials")
+}
+
+model ProjectColor {
+  id                String  @id @default(uuid()) @db.VarChar(36)
+  projectId         String  @db.VarChar(36)
+  name              String  @db.VarChar(150)
+  hexCode           String  @db.VarChar(9)
+  brand             String? @db.VarChar(150)
+  shadeNumber       String? @db.VarChar(60)
+  finish            String? @db.VarChar(100)
+  usedIn            String? @db.VarChar(255)
+  referenceImageUrl String? @db.VarChar(500)
+  notes             String? @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  project ProjectTracking @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  photos  ProjectPhoto[]
+
+  @@index([projectId])
+  @@index([deletedAt])
+  @@map("project_colors")
+}
+
+/// Photos are stored on disk (uploads/projects/...); only the path + metadata live in MySQL.
+model ProjectPhoto {
+  id          String     @id @default(uuid()) @db.VarChar(36)
+  projectId   String     @db.VarChar(36)
+  stage       PhotoStage @default(OTHER)
+  fileUrl     String     @db.VarChar(500)
+  fileName    String?    @db.VarChar(255)
+  caption     String?    @db.VarChar(255)
+  description String?    @db.Text
+  takenAt     DateTime?
+  materialId  String?    @db.VarChar(36)
+  colorId     String?    @db.VarChar(36)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  project  ProjectTracking  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  material ProjectMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  color    ProjectColor?    @relation(fields: [colorId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, stage])
+  @@index([deletedAt])
+  @@map("project_photos")
+}
+
+model ProjectActivity {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  projectId   String  @db.VarChar(36)
+  /// e.g. PROJECT_CREATED, PROGRESS_CHANGED, EXPENSE_ADDED, PHOTOS_UPLOADED, GALLERY_PUBLISHED
+  type        String  @db.VarChar(50)
+  title       String  @db.VarChar(255)
+  description String? @db.Text
+
+  createdById String?  @db.VarChar(36)
+  createdAt   DateTime @default(now())
+
+  project ProjectTracking @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+  @@map("project_activities")
+}
+
+/// Payments are keyed to the quotation (an advance can arrive before a project exists)
+/// and linked to the project once one is created.
+model ProjectPayment {
+  id              String        @id @default(uuid()) @db.VarChar(36)
+  quotationId     String        @db.VarChar(36)
+  projectId       String?       @db.VarChar(36)
+  paymentDate     DateTime      @default(now())
+  amount          Decimal       @default(0) @db.Decimal(12, 2)
+  method          PaymentMethod @default(CASH)
+  referenceNumber String?       @db.VarChar(100)
+  notes           String?       @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  quotation Quotation        @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  project   ProjectTracking? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([quotationId, paymentDate])
+  @@index([projectId])
+  @@index([deletedAt])
+  @@map("project_payments")
+}
+
+model Testimonial {
+  id           String        @id @default(uuid()) @db.VarChar(36)
+  customerName String        @db.VarChar(200)
+  /// Short attribution line — e.g. "Neelankarai villa, 2025" or "Homeowner, Chennai".
+  role         String?       @db.VarChar(255)
+  quote        String        @db.Text
+  /// 1-5 star rating, optional.
+  rating       Int?          @db.TinyInt
+  avatarUrl    String?       @db.VarChar(500)
+  isFeatured   Boolean       @default(false)
+  sortOrder    Int           @default(0)
+  status       GalleryStatus @default(ACTIVE)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([status])
+  @@index([isFeatured])
+  @@map("testimonials")
+}
+
+// ============================================================================
+// WHATSAPP
+// ============================================================================
+
+model WhatsAppSession {
+  id                 String                @id @default(uuid()) @db.VarChar(36)
+  sessionName        String                @unique @db.VarChar(100)
+  status             WhatsAppSessionStatus @default(DISCONNECTED)
+  phoneNumber        String?               @db.VarChar(20)
+  qrCode             String?               @db.Text
+  isConnected        Boolean               @default(false)
+  lastConnectedAt    DateTime?
+  lastDisconnectedAt DateTime?
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  messages WhatsAppMessage[]
+
+  @@map("whatsapp_sessions")
+}
+
+model WhatsAppMessage {
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  sessionId   String? @db.VarChar(36)
+  customerId  String? @db.VarChar(36)
+  quotationId String? @db.VarChar(36)
+  galleryId   String? @db.VarChar(36)
+
+  direction  WhatsAppMessageDirection @default(OUTBOUND)
+  type       WhatsAppMessageType      @default(TEXT)
+  toNumber   String?                  @db.VarChar(20)
+  fromNumber String?                  @db.VarChar(20)
+  content    String?                  @db.Text
+  mediaUrl   String?                  @db.VarChar(500)
+  fileName   String?                  @db.VarChar(255)
+
+  status            WhatsAppMessageStatus @default(QUEUED)
+  providerMessageId String?               @db.VarChar(150)
+  errorMessage      String?               @db.Text
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  session   WhatsAppSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  customer  Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  quotation Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  gallery   Gallery?         @relation(fields: [galleryId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([customerId])
+  @@index([quotationId])
+  @@index([galleryId])
+  @@index([status])
+  @@index([direction])
+  @@map("whatsapp_messages")
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id      String           @id @default(uuid()) @db.VarChar(36)
+  userId  String           @db.VarChar(36)
+  type    NotificationType @default(SYSTEM)
+  title   String           @db.VarChar(200)
+  message String           @db.Text
+  link    String?          @db.VarChar(500)
+  isRead  Boolean          @default(false)
+  readAt  DateTime?
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ============================================================================
+// SETTINGS
+// ============================================================================
+
+model Setting {
+  id       String          @id @default(uuid()) @db.VarChar(36)
+  category SettingCategory
+  key      String          @db.VarChar(100)
+  value    String?         @db.Text
+  isSecret Boolean         @default(false)
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([category, key])
+  @@index([category])
+  @@map("settings")
+}
+
+model DatabaseBackup {
+  id           String       @id @default(uuid()) @db.VarChar(36)
+  fileName     String       @db.VarChar(255)
+  filePath     String       @db.VarChar(500)
+  fileSize     BigInt?
+  status       BackupStatus @default(PENDING)
+  errorMessage String?      @db.Text
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([status])
+  @@map("database_backups")
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.VarChar(36)
+  userId      String?     @db.VarChar(36)
+  action      AuditAction @default(OTHER)
+  module      String      @db.VarChar(100)
+  entityType  String?     @db.VarChar(100)
+  entityId    String?     @db.VarChar(36)
+  description String?     @db.Text
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?     @db.VarChar(45)
+  userAgent   String?     @db.VarChar(255)
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([userId])
+  @@index([module])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+uploads
+whatsapp-sessions
+backups
+.env
+.env.*
+!.env.example
+.git
+.vscode
+*.log

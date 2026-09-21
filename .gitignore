@@ -1,0 +1,30 @@
+# dependencies & build output
+node_modules/
+.next/
+dist/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — never commit real env files
+.env
+.env.*
+!.env.example
+
+# runtime data (customer data, uploads, sessions, backups)
+wall-texture-crm-api/uploads/
+wall-texture-crm-api/backups/
+wall-texture-crm-api/whatsapp-sessions/
+wall-texture-crm-api/.wwebjs_cache/
+*.sql
+
+# logs / pids / editor & tool folders
+*.log
+*.pid
+.kilo/
+.vscode/
+.idea/
+.DS_Store
+*.bak
+*.bak-*

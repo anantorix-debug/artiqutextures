@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens straight from the Figma "Aritiqu — Design System" page.
+ * Palette is built from three materials: mineral plaster, indigo pigment,
+ * timber. Brass appears once per section as a 2px tick — never as a surface.
+ */
+:root {
+  /* Surface & ground */
+  --paper: #f2ede2;
+  --chalk: #e8e1d3;
+  --plaster: #cbc1b0;
+  --plaster-deep: #a2957e;
+
+  /* Ink, indigo & accent */
+  --ink: #1a2233;
+  --ink-soft: #2c3a55;
+  --indigo: #2e4470;
+  --indigo-lt: #5c7099;
+  --brass: #b98d3c;
+
+  /* Timber — three-stop gradients, never flat */
+  --timber-teak-dark: #3b2415;
+  --timber-teak-mid: #8a5a32;
+  --timber-teak-light: #c08b4e;
+  --timber-teak-shadow: #1e1009;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-chalk: var(--chalk);
+  --color-plaster: var(--plaster);
+  --color-plaster-deep: var(--plaster-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-indigo: var(--indigo);
+  --color-indigo-lt: var(--indigo-lt);
+  --color-brass: var(--brass);
+
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-karla);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-karla), Karla, Arial, sans-serif;
+}
+
+/*
+ * Type scale — Fraunces (display) + Karla (body/utility), per the design
+ * system spec. Fraunces headings also need the SOFT/WONK variable-font
+ * axes Figma sets inline; apply those via the `font-display` class below
+ * alongside Tailwind's auto-generated `font-display` family utility.
+ */
+@layer components {
+  .font-display {
+    font-variation-settings: "SOFT" 0, "WONK" 1;
+  }
+
+  .text-display {
+    @apply font-display font-semibold;
+    font-size: 96px;
+    line-height: 92px;
+    letter-spacing: -0.032em;
+  }
+  .text-head-1 {
+    @apply font-display font-semibold;
+    font-size: 52px;
+    line-height: 64px;
+    letter-spacing: -0.024em;
+  }
+  .text-head-2 {
+    @apply font-display font-semibold;
+    font-size: 46px;
+    line-height: 56px;
+    letter-spacing: -0.022em;
+  }
+  .text-head-3 {
+    @apply font-display font-semibold;
+    font-size: 31px;
+    letter-spacing: -0.014em;
+  }
+  .text-head-4 {
+    @apply font-display font-semibold;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+  }
+  .text-head-5 {
+    @apply font-display font-semibold;
+    font-size: 22px;
+    letter-spacing: -0.008em;
+  }
+  .text-lead {
+    font-size: 18px;
+    line-height: 31px;
+  }
+  .text-body {
+    font-size: 16px;
+    line-height: 28px;
+  }
+  .text-small {
+    font-size: 14px;
+    line-height: 24px;
+  }
+  .text-caption {
+    font-size: 12.5px;
+    line-height: 18px;
+    letter-spacing: 0.01em;
+  }
+  .text-eyebrow {
+    font-family: var(--font-body), Karla, sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  .text-tag {
+    font-family: var(--font-body), Karla, sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
