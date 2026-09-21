@@ -17,7 +17,6 @@ wall-texture-crm-api/uploads/
 wall-texture-crm-api/backups/
 wall-texture-crm-api/whatsapp-sessions/
 wall-texture-crm-api/.wwebjs_cache/
-*.sql
 
 # logs / pids / editor & tool folders
 *.log
