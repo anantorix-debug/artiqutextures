@@ -1,0 +1,111 @@
+# Production stack for artiqusurface.com
+#   artiqusurface.com        -> site     (public website)
+#   admin.artiqusurface.com  -> crm      (admin panel)
+#   api.artiqusurface.com    -> backend  (API, uploads, WhatsApp)
+# Only Caddy publishes ports (80/443). MySQL, Redis and the apps stay on the private network.
+name: artiqu
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [site, crm, backend]
+
+  mysql:
+    image: mysql:9.1
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: walltextures
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build:
+      context: ../wall-texture-crm-api
+    restart: unless-stopped
+    shm_size: "1gb" # Chrome (WhatsApp) needs shared memory
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      API_PREFIX: api
+      FRONTEND_URL: https://admin.${DOMAIN}
+      CORS_ORIGIN: https://${DOMAIN},https://www.${DOMAIN},https://admin.${DOMAIN}
+      DATABASE_URL: mysql://root:${DB_ROOT_PASSWORD}@mysql:3306/walltextures
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: 7d
+      JWT_RESET_SECRET: ${JWT_RESET_SECRET}
+      JWT_RESET_EXPIRES_IN: 30m
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_NAME: Artiqu Surface
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      UPLOAD_DIR: uploads
+      MAX_FILE_SIZE_MB: "15"
+      WHATSAPP_SESSION_DIR: whatsapp-sessions
+      WHATSAPP_SESSION_NAME: default
+      BACKUP_DIR: backups
+      MYSQLDUMP_PATH: mysqldump
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/whatsapp-sessions:/app/whatsapp-sessions
+      - ./data/backups:/app/backups
+
+  crm:
+    build:
+      context: ../wall-texture-crm
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api
+    restart: unless-stopped
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    depends_on: [backend]
+
+  site:
+    build:
+      context: ../artiqusite
+      args:
+        NEXT_PUBLIC_API_URL: https://api.${DOMAIN}/api
+    restart: unless-stopped
+    depends_on: [backend]
+
+volumes:
+  mysql-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

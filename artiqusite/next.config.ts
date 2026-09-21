@@ -21,6 +21,7 @@ const hosts = [apiHost(), { protocol: "http" as const, hostname: "localhost", po
 );
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: hosts.map((h) => ({ ...h, pathname: "/uploads/**" })),
     // The backend is on a private/local address in dev, which Next 16's image

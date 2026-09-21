@@ -28,3 +28,6 @@ wall-texture-crm-api/.wwebjs_cache/
 .DS_Store
 *.bak
 *.bak-*
+
+# server runtime data (uploads, WhatsApp session, backups)
+deploy/data/
