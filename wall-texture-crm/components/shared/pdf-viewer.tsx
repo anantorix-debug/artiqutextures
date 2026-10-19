@@ -13,6 +13,11 @@ export function PdfViewer({ blob, className }: { blob: Blob | undefined; classNa
   const [width, setWidth] = useState(0);
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [pageCount, setPageCount] = useState(0);
+  // Bumped on every successfully parsed document so the redraw effect below always
+  // re-fires — status/pageCount alone can be identical to the previous blob (e.g.
+  // same quotation, same page count, new template), which otherwise leaves the
+  // canvases showing the stale render.
+  const [docVersion, setDocVersion] = useState(0);
   const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([]);
 
   useEffect(() => {
@@ -30,6 +35,7 @@ export function PdfViewer({ blob, className }: { blob: Blob | undefined; classNa
   useEffect(() => {
     if (!blob) return;
     let cancelled = false;
+    setStatus("loading");
     (async () => {
       try {
         const pdfjs = await import("pdfjs-dist");
@@ -44,6 +50,7 @@ export function PdfViewer({ blob, className }: { blob: Blob | undefined; classNa
         docRef.current = doc;
         setPageCount(doc.numPages);
         setStatus("ready");
+        setDocVersion((v) => v + 1);
       } catch {
         if (!cancelled) setStatus("error");
       }
@@ -79,7 +86,7 @@ export function PdfViewer({ blob, className }: { blob: Blob | undefined; classNa
     return () => {
       cancelled = true;
     };
-  }, [status, width, pageCount]);
+  }, [status, width, pageCount, docVersion]);
 
   useEffect(
     () => () => {
