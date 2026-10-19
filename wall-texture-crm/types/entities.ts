@@ -386,6 +386,22 @@ export interface CompanyProfile {
   tftWebsite: string;
   tftGstNumber: string;
   tftLogoUrl: string | null;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankIfsc: string;
+  bankName: string;
+  bankBranch: string;
+  bankUpiId: string;
+  proformaPrefix: string;
+}
+
+export interface ProformaInvoice {
+  id: string;
+  invoiceNumber: string;
+  quotationId: string;
+  templateCode: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BusinessSummary {

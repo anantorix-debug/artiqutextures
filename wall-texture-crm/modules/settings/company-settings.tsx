@@ -217,12 +217,44 @@ export function CompanySettings() {
 
       <Card className="shadow-sm">
         <CardHeader>
+          <CardTitle className="text-sm font-semibold">Bank details</CardTitle>
+          <CardDescription>
+            One shared account for both brands — shown on every Quotation and Proforma Invoice PDF once set. Leave blank to hide it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Account holder name">
+            <Input value={values.bankAccountName} onChange={(e) => set("bankAccountName", e.target.value)} />
+          </Field>
+          <Field label="Account number">
+            <Input value={values.bankAccountNumber} onChange={(e) => set("bankAccountNumber", e.target.value)} />
+          </Field>
+          <Field label="IFSC code">
+            <Input value={values.bankIfsc} onChange={(e) => set("bankIfsc", e.target.value.toUpperCase())} />
+          </Field>
+          <Field label="Bank name">
+            <Input value={values.bankName} onChange={(e) => set("bankName", e.target.value)} />
+          </Field>
+          <Field label="Branch">
+            <Input value={values.bankBranch} onChange={(e) => set("bankBranch", e.target.value)} />
+          </Field>
+          <Field label="UPI ID" hint="Optional.">
+            <Input value={values.bankUpiId} onChange={(e) => set("bankUpiId", e.target.value)} />
+          </Field>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm">
+        <CardHeader>
           <CardTitle className="text-sm font-semibold">Quotation defaults</CardTitle>
           <CardDescription>Applied to every new quotation — each one can still be edited individually.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Numbering prefix" hint={`Next quotation numbers look like ${prefix}-${new Date().getFullYear()}-0001`}>
             <Input value={values.quotationPrefix} maxLength={8} onChange={(e) => set("quotationPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))} />
+          </Field>
+          <Field label="Proforma invoice prefix" hint={`Next invoice numbers look like ${(values.proformaPrefix || "PI").toUpperCase().replace(/[^A-Z0-9]/g, "")}-${new Date().getFullYear()}-0001`}>
+            <Input value={values.proformaPrefix} maxLength={8} onChange={(e) => set("proformaPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))} />
           </Field>
           <Field label="Default template">
             <Select value={values.defaultTemplateCode} onValueChange={(v) => v && set("defaultTemplateCode", v)}>

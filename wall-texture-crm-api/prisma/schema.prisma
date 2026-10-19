@@ -368,6 +368,7 @@ model Quotation {
   project          ProjectTracking?
   whatsappMessages WhatsAppMessage[]
   payments         ProjectPayment[]
+  proformaInvoices ProformaInvoice[]
 
   @@index([customerId])
   @@index([templateId])
@@ -376,6 +377,31 @@ model Quotation {
   @@index([rootQuotationId])
   @@index([deletedAt])
   @@map("quotations")
+}
+
+/// Generated from a quotation — freezes its items/customer/totals at generation time (a true
+/// invoice shouldn't drift if the quotation is edited later), but payment status is always
+/// computed live from ProjectPayment so "amount tracking" stays current.
+model ProformaInvoice {
+  id            String                @id @default(uuid()) @db.VarChar(36)
+  invoiceNumber String                @unique @db.VarChar(50)
+  quotationId   String                @db.VarChar(36)
+  templateCode  QuotationTemplateCode
+  /// Frozen QuotationPdfData-shaped snapshot (company, customer, items, totals, terms, notes) —
+  /// everything except number/date/docLabel/paymentSummary, which are set at render time.
+  snapshot      Json
+
+  createdById String?   @db.VarChar(36)
+  updatedById String?   @db.VarChar(36)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+
+  @@index([quotationId])
+  @@index([deletedAt])
+  @@map("proforma_invoices")
 }
 
 model QuotationItem {

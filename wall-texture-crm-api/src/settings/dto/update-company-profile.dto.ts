@@ -104,4 +104,22 @@ export class UpdateCompanyProfileDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) tftEmail?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) tftWebsite?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(30) tftGstNumber?: string;
+
+  // ---- Bank details: one shared account, shown on Quotation and Proforma Invoice PDFs ----
+  @ApiPropertyOptional({ description: 'Account holder name as it appears with the bank' })
+  @IsOptional() @IsString() @MaxLength(150)
+  bankAccountName?: string;
+
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(40) bankAccountNumber?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(20) bankIfsc?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) bankName?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) bankBranch?: string;
+  @ApiPropertyOptional({ description: 'UPI ID, shown if set' }) @IsOptional() @IsString() @MaxLength(100) bankUpiId?: string;
+
+  @ApiPropertyOptional({ example: 'PI', description: 'Prefix for generated proforma invoice numbers, e.g. PI-2026-0001' })
+  @IsOptional()
+  @Matches(/^[A-Za-z0-9]{1,8}$/, {
+    message: 'Prefix must be 1-8 letters/digits',
+  })
+  proformaPrefix?: string;
 }

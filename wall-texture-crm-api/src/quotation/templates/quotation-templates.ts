@@ -47,16 +47,18 @@ const contact = (data: QuotationPdfData, color: string, align?: string): PdfNode
     lineHeight: 1.2,
   }));
 
-/** Right-aligned "QUOTATION / number / date" block. */
+/** Right-aligned "QUOTATION / number / date" block (or "PROFORMA INVOICE" etc. via data.docLabel). */
 const titleBlock = (
   data: QuotationPdfData,
   opts: { color: string; sub: string; size?: number; spacing?: number },
-): PdfNode => ({
+): PdfNode => {
+  const label = (data.docLabel ?? 'Quotation').toUpperCase();
+  return {
   width: 170,
   stack: [
     {
-      text: 'QUOTATION',
-      fontSize: opts.size ?? 22,
+      text: label,
+      fontSize: opts.size ?? (label.length > 10 ? 14 : 22),
       bold: true,
       alignment: 'right',
       color: opts.color,
@@ -71,7 +73,8 @@ const titleBlock = (
       margin: [0, 2, 0, 0],
     },
   ],
-});
+  };
+};
 
 // ---------------------------------------------------------------------------
 // Layout 1 — Classic: letterhead on white, ruled table
@@ -147,7 +150,15 @@ const band =
             ? {
                 width: 150,
                 stack: [
-                  { text: 'QUOTATION', fontSize: 15, bold: true, alignment: 'right', color: '#ffffff', characterSpacing: 3, margin: [0, 26, 0, 0] },
+                  {
+                    text: (data.docLabel ?? 'Quotation').toUpperCase(),
+                    fontSize: (data.docLabel ?? 'Quotation').length > 10 ? 12 : 15,
+                    bold: true,
+                    alignment: 'right',
+                    color: '#ffffff',
+                    characterSpacing: 3,
+                    margin: [0, 26, 0, 0],
+                  },
                   { text: data.quotationNumber, fontSize: 10, bold: true, alignment: 'right', color: t.onDarkSub },
                 ],
               }
@@ -179,7 +190,13 @@ const minimal =
               },
             ],
           },
-          { text: 'Quotation', fontSize: 30, color: t.text, margin: [0, 22, 0, 0], characterSpacing: -0.5 },
+          {
+            text: data.docLabel ?? 'Quotation',
+            fontSize: (data.docLabel ?? 'Quotation').length > 10 ? 24 : 30,
+            color: t.text,
+            margin: [0, 22, 0, 0],
+            characterSpacing: -0.5,
+          },
           {
             columns: [
               { text: data.quotationNumber, fontSize: 10, bold: true, color: t.accent, width: 'auto' },

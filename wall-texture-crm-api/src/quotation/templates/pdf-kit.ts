@@ -312,7 +312,7 @@ export function partyBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
         stack: [
           label('Project & quotation'),
           { text: data.projectName, bold: true, fontSize: 10.5, color: theme.text, margin: [0, 0, 0, 3] },
-          detailRow('Quotation #', data.quotationNumber),
+          detailRow(data.numberLabel ?? 'Quotation #', data.quotationNumber),
           detailRow('Date', fmtDate(data.quotationDate)),
           detailRow('Valid until', fmtDate(data.validUntil)),
           data.version > 1 ? detailRow('Revision', `v${data.version}`) : null,
@@ -429,6 +429,18 @@ export function totalsBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
       { text: money(data.advanceRequired), fontSize: 9, bold: true, alignment: 'right', color: theme.primary, border: [false, false, false, false] },
     ]);
   }
+  if (data.paymentSummary) {
+    body.push(
+      [
+        { text: 'Amount Received', fontSize: 9, color: theme.muted, border: [false, false, false, false] },
+        { text: money(data.paymentSummary.amountReceived), fontSize: 9, alignment: 'right', border: [false, false, false, false] },
+      ],
+      [
+        { text: 'Balance Due', fontSize: 9.5, bold: true, color: theme.primary, border: [false, false, false, false] },
+        { text: money(data.paymentSummary.balanceDue), fontSize: 9.5, bold: true, alignment: 'right', color: theme.primary, border: [false, false, false, false] },
+      ],
+    );
+  }
 
   return {
     unbreakable: true,
@@ -491,6 +503,49 @@ export function termsNotesBlock(data: QuotationPdfData, theme: PdfTheme): PdfNod
           }
         : null,
     ].filter(Boolean),
+  };
+}
+
+/** Bank account for payment — renders nothing if not set in Settings. */
+export function bankDetailsBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
+  const b = data.bankDetails;
+  if (!b || !b.accountName || !b.accountNumber) return { text: '' };
+
+  const heading = (t: string): PdfNode => ({
+    text: t.toUpperCase(),
+    fontSize: 7.5,
+    bold: true,
+    characterSpacing: 1,
+    color: theme.accent,
+    margin: [0, 0, 0, 3],
+  });
+  const bankLine = [b.bankName, b.branch].filter(Boolean).join(', ');
+
+  return {
+    margin: [0, 14, 0, 0],
+    unbreakable: true,
+    stack: [
+      heading('Bank details'),
+      {
+        columns: [
+          {
+            width: '*',
+            stack: [
+              { text: b.accountName, fontSize: 9, bold: true, color: theme.text },
+              bankLine ? { text: bankLine, fontSize: 8.5, color: theme.muted } : null,
+            ].filter(Boolean),
+          },
+          {
+            width: 230,
+            stack: [
+              { text: `A/C No: ${b.accountNumber}`, fontSize: 8.5, color: theme.muted },
+              { text: `IFSC: ${b.ifsc}`, fontSize: 8.5, color: theme.muted },
+              b.upiId ? { text: `UPI: ${b.upiId}`, fontSize: 8.5, color: theme.muted } : null,
+            ].filter(Boolean),
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -558,11 +613,17 @@ export function composeQuotation(
   return {
     ...PAGE,
     info: {
-      title: `Quotation ${data.quotationNumber}`,
+      title: `${data.docLabel ?? 'Quotation'} ${data.quotationNumber}`,
       author: data.company.name,
       subject: data.projectName,
     },
-    background: opts.background,
+    // pdfmake re-runs `background` on every page — without gating by page number, a
+    // multi-page document would repeat the dark/coloured header band (meant only for
+    // the page-1 letterhead) behind continuation pages, making body text and the
+    // signature block illegible wherever they land.
+    background: opts.background
+      ? (currentPage: number) => (currentPage === 1 ? opts.background : undefined)
+      : undefined,
     footer: pageFooter(data, theme),
     content: [
       opts.header,
@@ -572,6 +633,7 @@ export function composeQuotation(
       itemsTable(data, theme),
       totalsBlock(data, theme),
       termsNotesBlock(data, theme),
+      bankDetailsBlock(data, theme),
       signatureBlock(data, theme),
     ],
   };

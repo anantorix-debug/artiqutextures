@@ -33,6 +33,16 @@ export interface CompanyProfile {
   tftWebsite: string;
   tftGstNumber: string;
   tftLogoUrl: string | null;
+
+  /** One shared bank account, shown on both Quotation and Proforma Invoice PDFs. */
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankIfsc: string;
+  bankName: string;
+  bankBranch: string;
+  bankUpiId: string;
+
+  proformaPrefix: string;
 }
 
 export const DEFAULT_TERMS = [
@@ -65,6 +75,13 @@ const DEFAULTS: CompanyProfile = {
   tftWebsite: '',
   tftGstNumber: '',
   tftLogoUrl: null,
+  bankAccountName: '',
+  bankAccountNumber: '',
+  bankIfsc: '',
+  bankName: '',
+  bankBranch: '',
+  bankUpiId: '',
+  proformaPrefix: 'PI',
 };
 
 /** Company key/value settings live in the existing `settings` table under the GENERAL category. */
@@ -143,6 +160,17 @@ export class CompanyProfileService {
       tftWebsite: map.get('tftWebsite') ?? '',
       tftGstNumber: map.get('tftGstNumber') ?? '',
       tftLogoUrl: map.get('tftLogoUrl') || null,
+      bankAccountName: map.get('bankAccountName') ?? '',
+      bankAccountNumber: map.get('bankAccountNumber') ?? '',
+      bankIfsc: map.get('bankIfsc') ?? '',
+      bankName: map.get('bankName') ?? '',
+      bankBranch: map.get('bankBranch') ?? '',
+      bankUpiId: map.get('bankUpiId') ?? '',
+      proformaPrefix: (
+        str('proformaPrefix', DEFAULTS.proformaPrefix) || 'PI'
+      )
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, ''),
     };
   }
 

@@ -21,12 +21,26 @@ export interface QuotationPdfCompany {
   logoPath?: string | null;
 }
 
+export interface QuotationPdfBankDetails {
+  accountName: string;
+  accountNumber: string;
+  ifsc: string;
+  bankName: string;
+  branch?: string | null;
+  upiId?: string | null;
+}
+
 export interface QuotationPdfData {
   quotationNumber: string;
   quotationDate: Date;
   validUntil?: Date | null;
   projectName: string;
   version: number;
+
+  /** Big header title. Defaults to 'Quotation' — set to 'Proforma Invoice' for that document. */
+  docLabel?: string;
+  /** Label for the number row in the Project & quotation block. Defaults to 'Quotation #'. */
+  numberLabel?: string;
 
   company: QuotationPdfCompany;
 
@@ -60,6 +74,12 @@ export interface QuotationPdfData {
   termsConditions?: string | null;
   notes?: string | null;
   signatureUrl?: string | null;
+
+  /** Shared bank account, shown near the terms if set — same account for both brands. */
+  bankDetails?: QuotationPdfBankDetails | null;
+
+  /** Proforma Invoice only: live amount received / balance due against the quotation. */
+  paymentSummary?: { amountReceived: number; balanceDue: number } | null;
 }
 
 export const DEFAULT_TERMS = [

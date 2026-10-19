@@ -47,6 +47,7 @@ import {
 } from "@/hooks/use-quotations";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { PaymentsPanel } from "@/modules/payments/payments-panel";
+import { ProformaInvoicesPanel } from "./proforma-invoices-panel";
 
 export function QuotationDetailClient({ id }: { id: string }) {
   const router = useRouter();
@@ -298,6 +299,8 @@ export function QuotationDetailClient({ id }: { id: string }) {
             onAdd={(values, done) => paymentMutations.add.mutate(values, { onSuccess: done })}
             onRemove={(pid) => paymentMutations.remove.mutate(pid)}
           />
+
+          <ProformaInvoicesPanel quotationId={id} />
 
           {(quotation.termsConditions || quotation.notes) && (
             <Card className="shadow-sm">

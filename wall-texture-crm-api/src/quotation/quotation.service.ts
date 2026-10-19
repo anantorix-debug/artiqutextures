@@ -21,6 +21,10 @@ import { ConvertToProjectDto } from './dto/convert-to-project.dto';
 import { QuotationItemDto } from './dto/quotation-item.dto';
 import { QuotationPdfData } from './templates/quotation-pdf.types';
 import { isSecondBrand } from './templates/quotation-templates';
+import {
+  bankDetailsFromProfile,
+  brandCompanyFromProfile,
+} from './templates/pdf-data.util';
 import { CompanyProfileService } from '../settings/company-profile.service';
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
@@ -694,27 +698,8 @@ export class QuotationService {
     );
 
     const data: QuotationPdfData = {
-      company: secondBrand
-        ? {
-            name: profile.tftName,
-            tagline: profile.tftTagline,
-            address: profile.tftAddress,
-            phone: profile.tftPhone,
-            email: profile.tftEmail,
-            website: profile.tftWebsite,
-            gstNumber: profile.tftGstNumber,
-            logoPath: logoPath ?? null,
-          }
-        : {
-            name: profile.companyName,
-            tagline: profile.tagline,
-            address: profile.address,
-            phone: profile.phone,
-            email: profile.email,
-            website: profile.website,
-            gstNumber: profile.gstNumber,
-            logoPath: logoPath ?? null,
-          },
+      company: brandCompanyFromProfile(profile, secondBrand, logoPath),
+      bankDetails: bankDetailsFromProfile(profile),
       advanceRequired: Number(quotation.advanceRequired),
       quotationNumber: quotation.quotationNumber,
       quotationDate: quotation.quotationDate,
