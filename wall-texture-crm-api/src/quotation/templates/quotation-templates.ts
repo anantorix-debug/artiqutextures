@@ -6,6 +6,7 @@ import {
   companyContactLines,
   composeQuotation,
   fmtDate,
+  headerBankLines,
   limeWashBackdrop,
   logoBlock,
 } from './pdf-kit';
@@ -97,6 +98,7 @@ const classic =
                     ? { text: data.company.tagline, fontSize: 8, italics: true, color: t.accent, margin: [0, 0, 0, 2] }
                     : null,
                   ...contact(data, t.muted),
+                  ...headerBankLines(data, t.muted),
                 ].filter(Boolean),
               },
               titleBlock(data, { color: t.primary, sub: t.muted }),
@@ -113,21 +115,24 @@ const classic =
 // ---------------------------------------------------------------------------
 const band =
   (t: Look, opts: { wordmark?: boolean; seed?: number } = {}): Builder =>
-  (data) =>
-    composeQuotation(data, t, {
+  (data) => {
+    // Bank details add two extra lines under the company contact block — grow the
+    // band so that text never overflows past the accent stripe underneath it.
+    const bandH = data.bankDetails?.accountName ? 168 : 134;
+    return composeQuotation(data, t, {
       headerGap: 44,
       washSeed: opts.seed ?? 7,
       headerBackground: [
         // Lime-wash plaster backdrop — a textured finish rather than a flat
         // printed colour block, matching the brand's own surface work.
-        ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, opts.seed ?? 7),
-        { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 5, color: t.accent },
-        { type: 'rect', x: 0, y: 139, w: PAGE_W, h: 2, color: '#e6c9a8' },
+        ...limeWashBackdrop(0, 0, PAGE_W, bandH, t.primary, opts.seed ?? 7),
+        { type: 'rect', x: 0, y: bandH, w: PAGE_W, h: 5, color: t.accent },
+        { type: 'rect', x: 0, y: bandH + 5, w: PAGE_W, h: 2, color: '#e6c9a8' },
         ...(opts.wordmark
           ? [
-              { type: 'rect', x: PAGE_W - 150, y: 0, w: 14, h: 134, color: '#d95a1c' },
-              { type: 'rect', x: PAGE_W - 120, y: 0, w: 8, h: 134, color: '#e0702a' },
-              { type: 'rect', x: PAGE_W - 98, y: 0, w: 4, h: 134, color: '#ea8c45' },
+              { type: 'rect', x: PAGE_W - 150, y: 0, w: 14, h: bandH, color: '#d95a1c' },
+              { type: 'rect', x: PAGE_W - 120, y: 0, w: 8, h: bandH, color: '#e0702a' },
+              { type: 'rect', x: PAGE_W - 98, y: 0, w: 4, h: bandH, color: '#ea8c45' },
             ]
           : []),
       ],
@@ -144,6 +149,7 @@ const band =
                 ? { text: data.company.tagline, fontSize: 8, color: t.onDarkSub, margin: [0, 1, 0, 3] }
                 : null,
               ...contact(data, t.onDarkText),
+              ...headerBankLines(data, t.onDarkText),
             ].filter(Boolean),
           },
           opts.wordmark
@@ -167,6 +173,7 @@ const band =
         columnGap: 10,
       },
     });
+  };
 
 // ---------------------------------------------------------------------------
 // Layout 3 — Minimal: white space, hairlines
@@ -187,6 +194,7 @@ const minimal =
                 stack: [
                   { text: data.company.name, fontSize: 12, bold: true, alignment: 'right', color: t.text },
                   ...contact(data, t.muted, 'right'),
+                  ...headerBankLines(data, t.muted, 'right'),
                 ],
               },
             ],
@@ -219,16 +227,19 @@ const minimal =
 // ---------------------------------------------------------------------------
 const luxury =
   (t: Look, seed = 7): Builder =>
-  (data) =>
-    composeQuotation(data, t, {
+  (data) => {
+    // Bank details add two extra lines under the company contact block — grow the
+    // band so that text never overflows past the accent rule underneath it.
+    const bandH = data.bankDetails?.accountName ? 168 : 134;
+    return composeQuotation(data, t, {
       headerGap: 44,
       washSeed: seed,
       headerBackground: [
         // Lime-wash plaster backdrop — a textured finish rather than a flat
         // printed colour block, matching the brand's own surface work.
-        ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, seed),
-        { type: 'rect', x: 36, y: 128, w: PAGE_W - 72, h: 1, color: t.accent },
-        { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 3, color: t.accent },
+        ...limeWashBackdrop(0, 0, PAGE_W, bandH, t.primary, seed),
+        { type: 'rect', x: 36, y: bandH - 6, w: PAGE_W - 72, h: 1, color: t.accent },
+        { type: 'rect', x: 0, y: bandH, w: PAGE_W, h: 3, color: t.accent },
       ],
       header: {
         columns: [
@@ -241,6 +252,7 @@ const luxury =
                 ? { text: data.company.tagline, fontSize: 8, color: t.onDarkSub, margin: [0, 0, 0, 3] }
                 : null,
               ...contact(data, t.onDarkText),
+              ...headerBankLines(data, t.onDarkText),
             ].filter(Boolean),
           },
           titleBlock(data, { color: t.tableHeadText, sub: t.onDarkSub, size: 20, spacing: 4 }),
@@ -248,6 +260,7 @@ const luxury =
         columnGap: 10,
       },
     });
+  };
 
 // ---------------------------------------------------------------------------
 // Looks (colour palettes) per brand

@@ -570,39 +570,34 @@ export function termsNotesBlock(data: QuotationPdfData, theme: PdfTheme): PdfNod
   };
 }
 
-/** Bank account for payment — renders nothing if not set in Settings. */
-export function bankDetailsBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
+/**
+ * Compact bank summary for the header, right under the company contact lines —
+ * shown up top so the customer sees payment details immediately, not buried near
+ * the signature. Renders nothing if no bank account is set in Settings.
+ */
+export function headerBankLines(data: QuotationPdfData, color: string, align?: string): PdfNode[] {
   const b = data.bankDetails;
-  if (!b || !b.accountName || !b.accountNumber) return { text: '' };
-
-  const heading = (t: string): PdfNode => ({
-    text: t.toUpperCase(),
-    fontSize: 7.5,
-    bold: true,
-    characterSpacing: 1,
-    color: theme.accent,
-    margin: [0, 0, 0, 3],
-  });
+  if (!b || !b.accountName || !b.accountNumber) return [];
   const bankLine = [b.bankName, b.branch].filter(Boolean).join(', ');
-  const acLine = [`A/C No: ${b.accountNumber}`, `IFSC: ${b.ifsc}`].join('   ·   ');
-
-  return {
-    margin: [0, 10, 0, 0],
-    unbreakable: true,
-    columns: [
-      {
-        width: 260,
-        stack: [
-          heading('Bank details'),
-          { text: b.accountName, fontSize: 9, bold: true, color: theme.text },
-          bankLine ? { text: bankLine, fontSize: 8.5, color: theme.muted } : null,
-          { text: acLine, fontSize: 8.5, color: theme.muted, margin: [0, 1, 0, 0] },
-          b.upiId ? { text: `UPI: ${b.upiId}`, fontSize: 8.5, color: theme.muted } : null,
-        ].filter(Boolean),
-      },
-      { width: '*', text: '' },
-    ],
-  };
+  return [
+    {
+      text: `${b.accountName}${bankLine ? ' — ' + bankLine : ''}`,
+      fontSize: 7.5,
+      color,
+      alignment: align,
+      margin: [0, 3, 0, 0],
+      lineHeight: 1.2,
+    },
+    {
+      text: [`A/C ${b.accountNumber}`, `IFSC ${b.ifsc}`, b.upiId ? `UPI ${b.upiId}` : null]
+        .filter(Boolean)
+        .join('   ·   '),
+      fontSize: 7.5,
+      color,
+      alignment: align,
+      lineHeight: 1.2,
+    },
+  ];
 }
 
 export function signatureBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
@@ -703,7 +698,6 @@ export function composeQuotation(
       itemsTable(data, theme),
       totalsBlock(data, theme),
       termsNotesBlock(data, theme),
-      bankDetailsBlock(data, theme),
       signatureBlock(data, theme),
     ],
   };
