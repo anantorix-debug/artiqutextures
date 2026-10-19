@@ -64,15 +64,28 @@ export class WhatsappClientService implements OnModuleInit {
   }
 
   async initialize(): Promise<void> {
-    if (this.client) {
-      this.logger.warn('WhatsApp client already initialized');
-      return;
-    }
-
-    this.manualLogout = false;
     const { sessionDir, sessionName } =
       this.configService.get<AppConfig>('app')!.whatsapp;
 
+    if (this.client) {
+      if (this.isReady()) {
+        this.logger.warn('WhatsApp client already initialized and ready');
+        return;
+      }
+      this.logger.warn('WhatsApp client exists but is not ready — destroying and restarting');
+      try {
+        await Promise.race([
+          this.client.destroy(),
+          new Promise((resolve) => setTimeout(resolve, 5_000)),
+        ]);
+      } catch {
+        // best-effort
+      }
+      this.client = null;
+    }
+
+    this.manualLogout = false;
+    this.clearChromeLocks(sessionDir, sessionName);
     await this.updateSession({ status: 'INITIALIZING' });
 
     // Newer WhatsApp Web releases can break whatsapp-web.js message sending. Set
