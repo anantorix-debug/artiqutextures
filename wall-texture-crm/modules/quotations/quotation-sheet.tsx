@@ -139,18 +139,22 @@ function shade(hex: string, amount: number): string {
   return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Fixed layout of soft blotches approximating the server-rendered lime-wash plaster texture in CSS. */
+/**
+ * Fixed layout of soft blotches approximating the server-rendered lime-wash plaster
+ * texture in CSS. Alpha is deliberately strong (not a subtle hint) — this renders at
+ * thumbnail scale in the template picker, where anything faint reads as flat.
+ */
 const BLOB_SPOTS: [x: number, y: number, w: number, h: number, lighter: boolean, alpha: string][] = [
-  [6, 15, 130, 80, true, "26"],
-  [22, 70, 100, 60, false, "18"],
-  [38, 10, 150, 90, true, "20"],
-  [52, 55, 110, 70, false, "16"],
-  [68, 20, 140, 85, true, "22"],
-  [82, 68, 95, 60, true, "1c"],
-  [12, 45, 80, 50, false, "14"],
-  [92, 35, 110, 65, true, "1e"],
-  [30, 85, 90, 55, false, "16"],
-  [60, 88, 120, 60, true, "1a"],
+  [6, 15, 130, 80, true, "66"],
+  [22, 70, 100, 60, false, "4a"],
+  [38, 10, 150, 90, true, "58"],
+  [52, 55, 110, 70, false, "42"],
+  [68, 20, 140, 85, true, "5c"],
+  [82, 68, 95, 60, true, "50"],
+  [12, 45, 80, 50, false, "3c"],
+  [92, 35, 110, 65, true, "54"],
+  [30, 85, 90, 55, false, "40"],
+  [60, 88, 120, 60, true, "48"],
 ];
 
 /** CSS approximation of limeWashBackdrop() (pdf-kit.ts) for the HTML template-picker preview. */

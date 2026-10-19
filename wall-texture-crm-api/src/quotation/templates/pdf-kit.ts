@@ -233,9 +233,11 @@ export function limeWashBackdrop(
     }
   };
 
-  // broad, very faint cloudy variation, then finer grain layered on top
-  blotch(Math.max(7, Math.round((w * h) / 16000)), 46, 95, 0.05);
-  blotch(Math.max(30, Math.round((w * h) / 2200)), 7, 20, 0.055);
+  // broad cloudy variation, then finer grain layered on top — clearly visible at a
+  // glance (not just under pixel-level inspection), while the concentric-ring falloff
+  // in softBlob() keeps edges soft so it still reads as a wash, not printed circles.
+  blotch(Math.max(7, Math.round((w * h) / 16000)), 46, 95, 0.16);
+  blotch(Math.max(30, Math.round((w * h) / 2200)), 7, 20, 0.14);
 
   const streaks = Math.max(5, Math.round(w / 85));
   for (let i = 0; i < streaks; i++) {
@@ -248,7 +250,7 @@ export function limeWashBackdrop(
       y2: y + h,
       lineWidth: 1 + rand() * 1.6,
       lineColor: shade(baseColor, rand() > 0.5 ? 0.22 : -0.1),
-      strokeOpacity: 0.03 + rand() * 0.03,
+      strokeOpacity: 0.07 + rand() * 0.06,
     });
   }
 
