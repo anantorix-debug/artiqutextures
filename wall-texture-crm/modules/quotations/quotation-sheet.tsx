@@ -121,6 +121,47 @@ const PALETTES: Record<SheetTheme, Palette> = {
 const inr = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money = (n: number) => `₹ ${inr.format(n)}`;
 
+/** Splits free-text terms into clean lines, stripping any "1." / "-" / "•" prefix — mirrors the backend's toLines(). */
+function toLines(text?: string | null): string[] {
+  return (text ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:\d+[.)]|[-•*])\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const mix = (c: number) =>
+    Math.max(0, Math.min(255, Math.round(amount >= 0 ? c + (255 - c) * amount : c * (1 + amount))));
+  const r = mix((n >> 16) & 0xff);
+  const g = mix((n >> 8) & 0xff);
+  const b = mix(n & 0xff);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Fixed layout of soft blotches approximating the server-rendered lime-wash plaster texture in CSS. */
+const BLOB_SPOTS: [x: number, y: number, w: number, h: number, lighter: boolean, alpha: string][] = [
+  [6, 15, 130, 80, true, "26"],
+  [22, 70, 100, 60, false, "18"],
+  [38, 10, 150, 90, true, "20"],
+  [52, 55, 110, 70, false, "16"],
+  [68, 20, 140, 85, true, "22"],
+  [82, 68, 95, 60, true, "1c"],
+  [12, 45, 80, 50, false, "14"],
+  [92, 35, 110, 65, true, "1e"],
+  [30, 85, 90, 55, false, "16"],
+  [60, 88, 120, 60, true, "1a"],
+];
+
+/** CSS approximation of limeWashBackdrop() (pdf-kit.ts) for the HTML template-picker preview. */
+function limeWashBg(primary: string): string {
+  const layers = BLOB_SPOTS.map(([x, y, w, h, lighter, alpha]) => {
+    const c = shade(primary, lighter ? 0.28 : -0.14);
+    return `radial-gradient(ellipse ${w}px ${h}px at ${x}% ${y}%, ${c}${alpha}, transparent 65%)`;
+  });
+  return `${layers.join(", ")}, ${primary}`;
+}
+
 function initials(name: string) {
   const p = name.trim().split(/\s+/).filter(Boolean);
   return (p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2)).toUpperCase();
@@ -180,7 +221,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
   const layout = LAYOUT[theme] ?? "classic";
   if (layout === "tft-band") {
     return (
-      <div style={{ background: p.primary, borderBottom: `6px solid ${p.accent}`, padding: "48px 48px 34px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: limeWashBg(p.primary), borderBottom: `6px solid ${p.accent}`, padding: "48px 48px 34px", position: "relative", overflow: "hidden" }}>
         {[[150, 14, "#d95a1c"], [120, 8, "#e0702a"], [98, 4, "#ea8c45"]].map(([r, w, c]) => (
           <div key={String(r)} style={{ position: "absolute", top: 0, bottom: 0, right: Number(r) - Number(w) + 4, width: Number(w), background: String(c) }} />
         ))}
@@ -201,7 +242,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
   }
   if (layout === "band") {
     return (
-      <div style={{ background: p.primary, borderBottom: `6px solid ${p.accent}`, padding: "48px 48px 34px" }}>
+      <div style={{ background: limeWashBg(p.primary), borderBottom: `6px solid ${p.accent}`, padding: "48px 48px 34px" }}>
         <div className="flex items-start gap-5">
           <Logo company={company} size={68} bg={p.accent} color={p.primary} />
           <div className="min-w-0 flex-1">
@@ -216,7 +257,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
   }
   if (layout === "luxury") {
     return (
-      <div style={{ background: p.primary, borderBottom: `4px solid ${p.accent}`, padding: "48px 48px 34px" }}>
+      <div style={{ background: limeWashBg(p.primary), borderBottom: `4px solid ${p.accent}`, padding: "48px 48px 34px" }}>
         <div className="flex items-start gap-5">
           <Logo company={company} size={68} bg={p.accent} color={p.primary} />
           <div className="min-w-0 flex-1">
@@ -275,7 +316,12 @@ export function QuotationSheet({
   company: CompanyProfile | null;
 }) {
   const p = PALETTES[theme] ?? PALETTES.TIME_FOR_TEXTURE;
-  const d = data;
+  // Item/customer data is always the fixed sample, but terms & notes are what a real
+  // quotation would actually get — the live Settings defaults — so this preview
+  // doesn't show stale hardcoded text once those defaults are edited.
+  const terms = company?.defaultTerms ? toLines(company.defaultTerms) : data.terms;
+  const notes = company?.defaultNotes || data.notes;
+  const d = { ...data, terms, notes };
   const cell = { padding: "8px 8px", borderBottom: `1px solid ${p.line}` } as const;
   const gridBorder = p.grid ? `1px solid ${p.line}` : undefined;
 
