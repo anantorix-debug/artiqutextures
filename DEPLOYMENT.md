@@ -107,6 +107,35 @@ Also copy backups **off the server** (your PC or cloud storage). Enable Hostinge
 - The session is stored in `deploy/data/whatsapp-sessions` and survives restarts/updates. Back it up if you want to avoid re-scanning.
 - If sending stops after a WhatsApp update: `dc logs backend | grep -i whatsapp`; a fix usually needs an updated `whatsapp-web.js`. Long-term, WhatsApp's official Business API is the stable option.
 
+### Why the number can get restricted, and what guards against it
+This runs on `whatsapp-web.js` — it automates the real WhatsApp Web interface, not Meta's
+official Business Platform. That's not a violation of any law, but it **is** outside
+WhatsApp's Terms of Service for business/automated use, and Meta can restrict or ban the
+connected number if it looks like bulk/spam activity. Three things in this codebase guard
+against that (none of them make it *compliant*, only safer to operate):
+
+1. **No bulk-send path exists at all.** Every `/whatsapp/send/*` endpoint takes exactly one
+   phone number per request — there is no array-of-recipients DTO or "send to all leads"
+   feature anywhere in the app. Someone would have to script many individual API calls to
+   send to many people, not click one button.
+2. **Per-message pacing with jitter.** Sends are queued through Redis/BullMQ with
+   `concurrency: 1`, so only one message is ever in flight, spaced at least
+   `WHATSAPP_MIN_DELAY_SECONDS` apart (default 4s) **plus** a random 0–`WHATSAPP_MAX_JITTER_SECONDS`
+   delay (default 0–5s) added per message. The randomness matters: a send every *exactly* 4.000s
+   is itself a recognisable bot signature — real human sending is irregular.
+3. **A hard daily cap.** `WHATSAPP_DAILY_MESSAGE_LIMIT` (default 150) is checked before a
+   message is even created — once that many outbound messages have gone out since midnight,
+   further sends are rejected with a clear 429 until the next day. Pacing alone only slows a
+   burst; it doesn't stop a script that fires 1,000 individual requests from eventually
+   draining out at one-per-few-seconds, which still looks like spam to WhatsApp over a few
+   hours. The daily cap is what actually bounds total volume.
+
+Tune these in `deploy/.env` (falls back to the defaults above if unset) based on real usage —
+a small business sending quotations to its own customers is a very different risk profile
+from anything resembling marketing blasts to cold contacts, which this is **not** built or
+intended for. Setting `WHATSAPP_DAILY_MESSAGE_LIMIT=0` disables the cap entirely; don't,
+unless you've moved to the official Business API.
+
 ## 9. Changing the domain
 1. Change `DOMAIN=` in `deploy/.env`, update DNS (section 1).
 2. `bash deploy/update.sh` (rebuilds the frontends with the new API address and reconfigures CORS/Caddy).

@@ -1,15 +1,19 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   ServiceUnavailableException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma, QuotationTemplateCode } from '@prisma/client';
 import { readFileSync, existsSync } from 'fs';
 import { extname, join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfig } from '../config/configuration';
 import { QuotationService } from '../quotation/quotation.service';
 import {
   buildPaginationMeta,
@@ -40,7 +44,37 @@ export class WhatsappService {
     private readonly prisma: PrismaService,
     private readonly quotationService: QuotationService,
     private readonly whatsappClient: WhatsappClientService,
+    private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Hard daily ceiling on outbound messages, checked before anything is written
+   * or queued. The per-message pacing (see WhatsappQueueProcessor) only slows the
+   * rate; it does nothing to cap the total volume if something fires many requests
+   * in a row. Sustained high volume to many distinct numbers — regardless of how
+   * slowly it's spread out — is exactly the pattern WhatsApp's spam detection acts
+   * on, so this is the actual thing standing between this number and a ban/restriction.
+   */
+  private async assertDailyLimitNotExceeded() {
+    const limit = this.configService.get<AppConfig>('app')!.whatsapp
+      .dailyMessageLimit;
+    if (!limit || limit <= 0) return; // 0/unset = no cap (explicit opt-out)
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const sentToday = await this.prisma.whatsAppMessage.count({
+      where: {
+        direction: 'OUTBOUND',
+        createdAt: { gte: startOfToday },
+      },
+    });
+    if (sentToday >= limit) {
+      throw new HttpException(
+        `Daily WhatsApp send limit reached (${sentToday}/${limit}). This protects the connected number from being restricted by WhatsApp — it resets at midnight. Adjust WHATSAPP_DAILY_MESSAGE_LIMIT if you need more.`,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
 
   async getStatus() {
     const session = await this.prisma.whatsAppSession.findFirst({
@@ -86,6 +120,7 @@ export class WhatsappService {
   }
 
   async sendText(dto: SendTextDto, userId?: string) {
+    await this.assertDailyLimitNotExceeded();
     const { phone, customerId } = await this.resolvePhone(
       dto.customerId,
       dto.phone,
@@ -125,6 +160,7 @@ export class WhatsappService {
     kind: 'IMAGE' | 'DOCUMENT',
     userId?: string,
   ) {
+    await this.assertDailyLimitNotExceeded();
     const { phone, customerId } = await this.resolvePhone(
       dto.customerId,
       dto.phone,
@@ -192,6 +228,7 @@ export class WhatsappService {
     dto: SendQuotationDto,
     userId?: string,
   ) {
+    await this.assertDailyLimitNotExceeded();
     const quotation = await this.prisma.quotation.findFirst({
       where: { id: quotationId, deletedAt: null },
       include: { customer: true },
@@ -240,6 +277,7 @@ export class WhatsappService {
     userId?: string,
     options?: { customerId?: string; caption?: string },
   ) {
+    await this.assertDailyLimitNotExceeded();
     const gallery = await this.prisma.gallery.findFirst({
       where: { id: galleryId, deletedAt: null },
     });

@@ -33,6 +33,14 @@ export interface AppConfig {
   whatsapp: {
     sessionDir: string;
     sessionName: string;
+    /** Hard ceiling on outbound messages per rolling day — the real protection against
+     * looking like a bulk/spam sender to WhatsApp, on top of the per-message pacing. */
+    dailyMessageLimit: number;
+    /** Minimum gap between sends, in seconds (also the BullMQ rate-limit window). */
+    minDelaySeconds: number;
+    /** Extra random jitter added on top of minDelaySeconds, in seconds — avoids a
+     * perfectly periodic send rhythm, which is itself a detectable automation signal. */
+    maxJitterSeconds: number;
   };
   backup: {
     dir: string;
@@ -104,6 +112,18 @@ export default (): { app: AppConfig } => ({
     whatsapp: {
       sessionDir: process.env.WHATSAPP_SESSION_DIR ?? 'whatsapp-sessions',
       sessionName: process.env.WHATSAPP_SESSION_NAME ?? 'default',
+      dailyMessageLimit: parseInt(
+        process.env.WHATSAPP_DAILY_MESSAGE_LIMIT ?? '150',
+        10,
+      ),
+      minDelaySeconds: parseInt(
+        process.env.WHATSAPP_MIN_DELAY_SECONDS ?? '4',
+        10,
+      ),
+      maxJitterSeconds: parseInt(
+        process.env.WHATSAPP_MAX_JITTER_SECONDS ?? '5',
+        10,
+      ),
     },
     backup: {
       dir: process.env.BACKUP_DIR ?? 'backups',

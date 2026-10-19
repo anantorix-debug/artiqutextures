@@ -80,6 +80,10 @@ services:
       MAX_FILE_SIZE_MB: "15"
       WHATSAPP_SESSION_DIR: whatsapp-sessions
       WHATSAPP_SESSION_NAME: default
+      # Anti-ban safety limits — see DEPLOYMENT.md "WhatsApp" section before raising these.
+      WHATSAPP_DAILY_MESSAGE_LIMIT: ${WHATSAPP_DAILY_MESSAGE_LIMIT:-150}
+      WHATSAPP_MIN_DELAY_SECONDS: ${WHATSAPP_MIN_DELAY_SECONDS:-4}
+      WHATSAPP_MAX_JITTER_SECONDS: ${WHATSAPP_MAX_JITTER_SECONDS:-5}
       BACKUP_DIR: backups
       MYSQLDUMP_PATH: mysqldump
     volumes:
