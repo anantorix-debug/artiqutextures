@@ -258,40 +258,62 @@ export function limeWashBackdrop(
 }
 
 /**
- * Very faint full-page lime-wash/paper-grain texture — applied behind every page of
- * every template (not just the coloured header band on band/luxury layouts), so the
- * "paper" itself feels hand-finished. Deliberately much fainter than
- * limeWashBackdrop() since this sits behind dense item tables and terms text on every
- * template, including the plain-white Classic/Minimal layouts, and must stay legible.
+ * Full-page lime-wash plaster backdrop for quotation body — set like limeWashBackdrop()
+ * with a warm limestone/plaster base, visible cloudy blotches (chalky highlights and subtle
+ * mineral pooling), and faint vertical trowel streaks across the entire page, matching the
+ * brand's signature hand-applied architectural lime-wash wall finish.
  */
 export function pageWash(w: number, h: number, tint: string, seed: number): PdfNode[] {
   const rand = seededRandom(seed);
-  const nodes: PdfNode[] = [];
+  // Warm natural lime-wash plaster base color (soft ivory/limestone)
+  const basePlaster = '#f8f5ee';
+  const nodes: PdfNode[] = [{ type: 'rect', x: 0, y: 0, w, h, color: basePlaster }];
 
   const blotch = (count: number, rMin: number, rMax: number, opacityMax: number) => {
     for (let i = 0; i < count; i++) {
       const r1 = rMin + rand() * (rMax - rMin);
       // Keep each blob's full bounding circle inside the page rect — pdfmake measures
       // the background canvas's own bounding box and fails to render the whole
-      // background (throwing, not just clipping) if it overshoots the reserved
-      // full-page height, which edge-positioned blobs would otherwise do.
+      // background if it overshoots the reserved full-page height.
       const cx = r1 + rand() * Math.max(0, w - 2 * r1);
       const cy = r1 + rand() * Math.max(0, h - 2 * r1);
+      const lighter = rand() > 0.45;
+      const blobColor = lighter
+        ? shade(basePlaster, 0.14 + rand() * 0.22) // soft chalky/ivory highlights
+        : shade(basePlaster, -(0.06 + rand() * 0.10)); // soft warm sand / mineral depth
       nodes.push(
         ...softBlob(
           cx,
           cy,
           r1,
           r1 * (0.6 + rand() * 0.4),
-          shade(tint, rand() > 0.5 ? 0.3 : -0.12),
-          opacityMax * 0.5 + rand() * opacityMax * 0.5,
+          blobColor,
+          (opacityMax * 0.55 + rand() * opacityMax * 0.45) * (lighter ? 1 : 0.8),
         ),
       );
     }
   };
 
-  blotch(Math.max(16, Math.round((w * h) / 24000)), 55, 120, 0.03);
-  blotch(Math.max(45, Math.round((w * h) / 3600)), 8, 22, 0.025);
+  // Broad cloudy plaster patches across the page (like limeWashBackdrop)
+  blotch(Math.max(14, Math.round((w * h) / 18000)), 50, 120, 0.18);
+  // Finer texture grain
+  blotch(Math.max(40, Math.round((w * h) / 2800)), 10, 26, 0.14);
+
+  // Subtle vertical trowel streaks matching limeWashBackdrop()
+  const streaks = Math.max(6, Math.round(w / 70));
+  for (let i = 0; i < streaks; i++) {
+    const sx = Math.max(10, Math.min(w - 10, (w / streaks) * (i + 0.5) + (rand() - 0.5) * 25));
+    nodes.push({
+      type: 'line',
+      x1: sx,
+      y1: 0,
+      x2: Math.max(5, Math.min(w - 5, sx + (rand() - 0.5) * 16)),
+      y2: h,
+      lineWidth: 0.8 + rand() * 1.4,
+      lineColor: shade(basePlaster, rand() > 0.5 ? 0.2 : -0.08),
+      strokeOpacity: 0.08 + rand() * 0.06,
+    });
+  }
 
   return nodes;
 }

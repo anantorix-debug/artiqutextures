@@ -166,6 +166,35 @@ function limeWashBg(primary: string): string {
   return `${layers.join(", ")}, ${primary}`;
 }
 
+/**
+ * Full-page lime-wash plaster backdrop in CSS, mirroring pageWash() in pdf-kit.ts.
+ * Evokes the brand's signature hand-applied architectural lime-wash wall finish.
+ */
+const BODY_BLOB_SPOTS: [x: number, y: number, w: number, h: number, lighter: boolean, alpha: string][] = [
+  [12, 14, 380, 240, true, "90"],
+  [84, 18, 360, 220, false, "40"],
+  [46, 30, 420, 260, true, "85"],
+  [16, 45, 340, 210, false, "3c"],
+  [76, 50, 400, 250, true, "88"],
+  [38, 66, 380, 230, false, "3e"],
+  [86, 76, 360, 220, true, "85"],
+  [18, 86, 400, 240, false, "38"],
+  [54, 90, 440, 270, true, "90"],
+  [90, 38, 320, 200, true, "80"],
+  [6, 60, 350, 220, true, "85"],
+  [48, 12, 300, 190, false, "34"],
+];
+
+function bodyLimeWashBg(): string {
+  const basePlaster = "#f8f5ee";
+  const layers = BODY_BLOB_SPOTS.map(([x, y, w, h, lighter, alpha]) => {
+    const c = lighter ? "#ffffff" : "#ded4c5";
+    return `radial-gradient(ellipse ${w}px ${h}px at ${x}% ${y}%, ${c}${alpha}, transparent 65%)`;
+  });
+  const trowelStreak = "linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(210,198,180,0.06) 50%, rgba(255,255,255,0.08) 100%)";
+  return `${layers.join(", ")}, ${trowelStreak}, ${basePlaster}`;
+}
+
 function initials(name: string) {
   const p = name.trim().split(/\s+/).filter(Boolean);
   return (p.length > 1 ? p[0][0] + p[1][0] : name.slice(0, 2)).toUpperCase();
@@ -340,7 +369,14 @@ export function QuotationSheet({
 
   return (
     <div
-      style={{ width: SHEET_W, height: SHEET_H, background: "#fff", color: p.text, fontFamily: "Roboto, Inter, system-ui, sans-serif", fontSize: 12 }}
+      style={{
+        width: SHEET_W,
+        height: SHEET_H,
+        background: bodyLimeWashBg(),
+        color: p.text,
+        fontFamily: "Roboto, Inter, system-ui, sans-serif",
+        fontSize: 12,
+      }}
       className="relative overflow-hidden"
     >
       <Header theme={theme} d={d} company={company} p={p} />
