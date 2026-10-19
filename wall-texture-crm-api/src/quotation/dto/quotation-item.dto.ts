@@ -1,17 +1,13 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class QuotationItemDto {
-  @ApiProperty({ example: 'PU Wall Texture - Sandstone Finish' })
-  @IsNotEmpty()
+  // Every field on a line item is optional — a flat-fee row (e.g. "Site visit charge")
+  // may have no product name or measured area, and a placeholder row may be priced later.
+  @ApiPropertyOptional({ example: 'PU Wall Texture - Sandstone Finish' })
+  @IsOptional()
   @IsString()
-  productName: string;
+  productName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -23,13 +19,15 @@ export class QuotationItemDto {
   @IsString()
   measurement?: string;
 
-  @ApiProperty({ example: 120 })
+  @ApiPropertyOptional({ example: 120 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  sqft: number;
+  sqft?: number;
 
-  @ApiProperty({ example: 85 })
+  @ApiPropertyOptional({ example: 85 })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  rate: number;
+  rate?: number;
 }

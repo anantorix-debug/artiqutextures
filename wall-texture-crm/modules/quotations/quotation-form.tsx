@@ -27,12 +27,14 @@ import type { Customer, Quotation } from "@/types/entities";
 import { DiscountType, QuotationTemplateCode } from "@/types/enums";
 import type { QuotationFormValues } from "@/services/quotation.service";
 
+// Every item field is optional — a flat-fee line (e.g. "Site visit charge") may have
+// no product name or measured area, and a placeholder row can be priced in later.
 const itemSchema = z.object({
-  productName: z.string().min(1, "Required"),
+  productName: z.string().optional(),
   description: z.string().optional(),
   measurement: z.string().optional(),
-  sqft: z.coerce.number().min(0.01, "Required"),
-  rate: z.coerce.number().min(0, "Required"),
+  sqft: z.coerce.number().min(0).optional(),
+  rate: z.coerce.number().min(0).optional(),
 });
 
 const schema = z.object({
@@ -288,7 +290,7 @@ export function QuotationForm({
                         name={`items.${index}.productName`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Product / Texture</FormLabel>
+                            <FormLabel className="text-xs">Product / Texture <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -303,7 +305,7 @@ export function QuotationForm({
                         name={`items.${index}.measurement`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Measurement</FormLabel>
+                            <FormLabel className="text-xs">Measurement <span className="text-muted-foreground">(optional)</span></FormLabel>
                             <FormControl>
                               <Input placeholder="12ft x 10ft" {...field} />
                             </FormControl>
@@ -316,7 +318,7 @@ export function QuotationForm({
                       name={`items.${index}.sqft`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">Sq.ft</FormLabel>
+                          <FormLabel className="text-xs">Sq.ft <span className="text-muted-foreground">(optional)</span></FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" {...field} />
                           </FormControl>
@@ -329,7 +331,7 @@ export function QuotationForm({
                       name={`items.${index}.rate`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">Rate</FormLabel>
+                          <FormLabel className="text-xs">Rate <span className="text-muted-foreground">(optional)</span></FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" {...field} />
                           </FormControl>

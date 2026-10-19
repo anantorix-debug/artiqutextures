@@ -216,30 +216,30 @@ const cell = (text: string, opts: Record<string, unknown> = {}): PdfNode => ({
   ...opts,
 });
 
-/** Items table: description wraps freely, header row repeats on every page, rows never split. */
+/** Items table: Product and Description are separate columns; header row repeats on every page, rows never split. */
 export function itemsTable(data: QuotationPdfData, theme: PdfTheme): PdfNode {
-  const head = ['#', 'Product / Description', 'Measurement', 'Qty (sq.ft)', 'Rate', 'Amount'].map(
-    (t, i) => ({
-      text: t,
-      bold: true,
-      fontSize: 8,
-      color: theme.tableHeadText,
-      fillColor: theme.tableHeadBg,
-      alignment: i === 0 ? 'center' : i >= 3 ? 'right' : 'left',
-      margin: [0, 2, 0, 2],
-    }),
-  );
+  const head = [
+    '#',
+    'Product',
+    'Description',
+    'Measurement',
+    'Qty (sq.ft)',
+    'Rate',
+    'Amount',
+  ].map((t, i) => ({
+    text: t,
+    bold: true,
+    fontSize: 8,
+    color: theme.tableHeadText,
+    fillColor: theme.tableHeadBg,
+    alignment: i === 0 ? 'center' : i >= 4 ? 'right' : 'left',
+    margin: [0, 2, 0, 2],
+  }));
 
   const rows = data.items.map((item) => [
     cell(String(item.srNo), { alignment: 'center', color: theme.muted }),
-    {
-      stack: [
-        { text: item.productName, bold: true, fontSize: 9, color: theme.text },
-        item.description
-          ? { text: item.description, fontSize: 8, color: theme.muted, margin: [0, 1, 0, 0] }
-          : null,
-      ].filter(Boolean),
-    },
+    cell(item.productName || '—', { bold: true, fontSize: 9, color: theme.text }),
+    cell(item.description || '—', { color: theme.muted }),
     cell(item.measurement || '—', { color: theme.muted }),
     cell(qty(item.sqft), { alignment: 'right' }),
     cell(money(item.rate), { alignment: 'right' }),
@@ -252,7 +252,7 @@ export function itemsTable(data: QuotationPdfData, theme: PdfTheme): PdfNode {
       headerRows: 1,
       dontBreakRows: true,
       keepWithHeaderRows: 1,
-      widths: [22, '*', 70, 52, 62, 74],
+      widths: [20, 92, '*', 62, 50, 56, 68],
       body: [head, ...rows],
     },
     layout: {

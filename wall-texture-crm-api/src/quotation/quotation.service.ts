@@ -59,7 +59,11 @@ export class QuotationService {
     installationCharges: number,
     additionalCharges: number,
   ): Totals {
-    const itemAmounts = items.map((item) => round2(item.sqft * item.rate));
+    // sqft/rate/productName are optional on the item — a line item without a measured
+    // area (e.g. a flat-fee charge) is valid and simply amounts to 0 unless priced.
+    const itemAmounts = items.map((item) =>
+      round2((item.sqft ?? 0) * (item.rate ?? 0)),
+    );
     const subTotal = round2(
       itemAmounts.reduce((sum, amount) => sum + amount, 0),
     );
@@ -143,9 +147,17 @@ export class QuotationService {
       dto.templateCode ??
         (profile.defaultTemplateCode as QuotationTemplateCode),
     );
+    // Product name, measurement, sqft and rate are all optional per item — normalize
+    // once so totals and the saved rows agree.
+    const items = dto.items.map((item) => ({
+      ...item,
+      productName: item.productName?.trim() ?? '',
+      sqft: item.sqft ?? 0,
+      rate: item.rate ?? 0,
+    }));
     const discountType = dto.discountType ?? 'PERCENTAGE';
     const totals = this.calculateTotals(
-      dto.items,
+      items,
       discountType,
       dto.discountValue ?? 0,
       dto.gstEnabled ?? false,
@@ -192,7 +204,7 @@ export class QuotationService {
         createdById: userId,
         updatedById: userId,
         items: {
-          create: dto.items.map((item, index) => ({
+          create: items.map((item, index) => ({
             srNo: index + 1,
             productName: item.productName,
             description: item.description,
@@ -296,7 +308,8 @@ export class QuotationService {
       },
     });
 
-    const items =
+    // Product name, measurement, sqft and rate are all optional per item.
+    const items = (
       dto.items ??
       existing.items.map((item) => ({
         productName: item.productName,
@@ -304,7 +317,13 @@ export class QuotationService {
         measurement: item.measurement ?? undefined,
         sqft: Number(item.sqft),
         rate: Number(item.rate),
-      }));
+      }))
+    ).map((item) => ({
+      ...item,
+      productName: item.productName?.trim() ?? '',
+      sqft: item.sqft ?? 0,
+      rate: item.rate ?? 0,
+    }));
 
     const discountType = dto.discountType ?? existing.discountType;
     const discountValue = dto.discountValue ?? Number(existing.discountValue);

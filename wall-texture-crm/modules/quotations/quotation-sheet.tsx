@@ -324,13 +324,13 @@ export function QuotationSheet({
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 24, fontSize: 11.5, border: gridBorder }}>
           <thead>
             <tr style={{ background: p.headBg, color: p.headText }}>
-              {["#", "Product / Description", "Measurement", "Qty (sq.ft)", "Rate", "Amount"].map((h, i) => (
+              {["#", "Product", "Description", "Measurement", "Qty (sq.ft)", "Rate", "Amount"].map((h, i) => (
                 <th
                   key={h}
                   style={{
                     padding: "9px 8px",
                     fontSize: 10.5,
-                    textAlign: i === 0 ? "center" : i >= 3 ? "right" : "left",
+                    textAlign: i === 0 ? "center" : i >= 4 ? "right" : "left",
                     borderBottom: theme === "MODERN_MINIMAL" ? `2px solid ${p.primary}` : undefined,
                     borderRight: p.grid ? `1px solid ${p.line}` : undefined,
                   }}
@@ -344,10 +344,8 @@ export function QuotationSheet({
             {d.items.map((it, i) => (
               <tr key={it.srNo} style={{ background: p.zebra && i % 2 === 1 ? p.zebra : undefined }}>
                 <td style={{ ...cell, textAlign: "center", color: p.muted, borderRight: gridBorder }}>{it.srNo}</td>
-                <td style={{ ...cell, borderRight: gridBorder }}>
-                  <div style={{ fontWeight: 700 }}>{it.productName}</div>
-                  {it.description && <div style={{ color: p.muted, fontSize: 10.5 }}>{it.description}</div>}
-                </td>
+                <td style={{ ...cell, fontWeight: 700, borderRight: gridBorder }}>{it.productName || "—"}</td>
+                <td style={{ ...cell, color: p.muted, borderRight: gridBorder }}>{it.description || "—"}</td>
                 <td style={{ ...cell, color: p.muted, borderRight: gridBorder }}>{it.measurement || "—"}</td>
                 <td style={{ ...cell, textAlign: "right", borderRight: gridBorder }}>{it.sqft}</td>
                 <td style={{ ...cell, textAlign: "right", borderRight: gridBorder }}>{money(it.rate)}</td>

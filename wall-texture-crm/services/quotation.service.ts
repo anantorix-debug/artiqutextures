@@ -10,11 +10,11 @@ export interface QuotationQuery extends PaginationQuery {
 }
 
 export interface QuotationItemInput {
-  productName: string;
+  productName?: string;
   description?: string;
   measurement?: string;
-  sqft: number;
-  rate: number;
+  sqft?: number;
+  rate?: number;
 }
 
 export interface QuotationFormValues {
