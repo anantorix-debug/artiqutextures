@@ -80,9 +80,10 @@ const titleBlock = (
 // Layout 1 — Classic: letterhead on white, ruled table
 // ---------------------------------------------------------------------------
 const classic =
-  (t: Look): Builder =>
+  (t: Look, washSeed = 101): Builder =>
   (data) =>
     composeQuotation(data, t, {
+      washSeed,
       header: {
         stack: [
           {
@@ -115,22 +116,21 @@ const band =
   (data) =>
     composeQuotation(data, t, {
       headerGap: 44,
-      background: {
-        canvas: [
-          // Lime-wash plaster backdrop — a textured finish rather than a flat
-          // printed colour block, matching the brand's own surface work.
-          ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, opts.seed ?? 7),
-          { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 5, color: t.accent },
-          { type: 'rect', x: 0, y: 139, w: PAGE_W, h: 2, color: '#e6c9a8' },
-          ...(opts.wordmark
-            ? [
-                { type: 'rect', x: PAGE_W - 150, y: 0, w: 14, h: 134, color: '#d95a1c' },
-                { type: 'rect', x: PAGE_W - 120, y: 0, w: 8, h: 134, color: '#e0702a' },
-                { type: 'rect', x: PAGE_W - 98, y: 0, w: 4, h: 134, color: '#ea8c45' },
-              ]
-            : []),
-        ],
-      },
+      washSeed: opts.seed ?? 7,
+      headerBackground: [
+        // Lime-wash plaster backdrop — a textured finish rather than a flat
+        // printed colour block, matching the brand's own surface work.
+        ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, opts.seed ?? 7),
+        { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 5, color: t.accent },
+        { type: 'rect', x: 0, y: 139, w: PAGE_W, h: 2, color: '#e6c9a8' },
+        ...(opts.wordmark
+          ? [
+              { type: 'rect', x: PAGE_W - 150, y: 0, w: 14, h: 134, color: '#d95a1c' },
+              { type: 'rect', x: PAGE_W - 120, y: 0, w: 8, h: 134, color: '#e0702a' },
+              { type: 'rect', x: PAGE_W - 98, y: 0, w: 4, h: 134, color: '#ea8c45' },
+            ]
+          : []),
+      ],
       header: {
         columns: [
           { width: 130, ...logoBlock(data, t, 52, true) },
@@ -172,9 +172,10 @@ const band =
 // Layout 3 — Minimal: white space, hairlines
 // ---------------------------------------------------------------------------
 const minimal =
-  (t: Look): Builder =>
+  (t: Look, washSeed = 102): Builder =>
   (data) =>
     composeQuotation(data, t, {
+      washSeed,
       header: {
         stack: [
           {
@@ -221,15 +222,14 @@ const luxury =
   (data) =>
     composeQuotation(data, t, {
       headerGap: 44,
-      background: {
-        canvas: [
-          // Lime-wash plaster backdrop — a textured finish rather than a flat
-          // printed colour block, matching the brand's own surface work.
-          ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, seed),
-          { type: 'rect', x: 36, y: 128, w: PAGE_W - 72, h: 1, color: t.accent },
-          { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 3, color: t.accent },
-        ],
-      },
+      washSeed: seed,
+      headerBackground: [
+        // Lime-wash plaster backdrop — a textured finish rather than a flat
+        // printed colour block, matching the brand's own surface work.
+        ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, seed),
+        { type: 'rect', x: 36, y: 128, w: PAGE_W - 72, h: 1, color: t.accent },
+        { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 3, color: t.accent },
+      ],
       header: {
         columns: [
           { width: 130, ...logoBlock(data, t, 52, true) },
@@ -297,13 +297,13 @@ const T_LUXURY: Look = {
 export const TEMPLATE_BUILDERS: Record<QuotationTemplateCode, Builder> = {
   // Artiqu Surface
   ARTIQUE_SURFACE: band(A_BAND, { seed: 7 }),
-  CLASSIC: classic(A_CLASSIC),
-  MODERN_MINIMAL: minimal(A_MINIMAL),
+  CLASSIC: classic(A_CLASSIC, 101),
+  MODERN_MINIMAL: minimal(A_MINIMAL, 102),
   LUXURY_TEXTURE: luxury(A_LUXURY, 23),
   // Time For Texture (separate brand)
   TIME_FOR_TEXTURE: band(T_BAND, { wordmark: true, seed: 41 }),
-  TFT_CLASSIC: classic(T_CLASSIC),
-  TFT_MINIMAL: minimal(T_MINIMAL),
+  TFT_CLASSIC: classic(T_CLASSIC, 103),
+  TFT_MINIMAL: minimal(T_MINIMAL, 104),
   TFT_LUXURY: luxury(T_LUXURY, 59),
 };
 

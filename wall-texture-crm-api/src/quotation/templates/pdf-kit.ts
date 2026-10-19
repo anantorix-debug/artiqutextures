@@ -257,6 +257,45 @@ export function limeWashBackdrop(
   return nodes;
 }
 
+/**
+ * Very faint full-page lime-wash/paper-grain texture — applied behind every page of
+ * every template (not just the coloured header band on band/luxury layouts), so the
+ * "paper" itself feels hand-finished. Deliberately much fainter than
+ * limeWashBackdrop() since this sits behind dense item tables and terms text on every
+ * template, including the plain-white Classic/Minimal layouts, and must stay legible.
+ */
+export function pageWash(w: number, h: number, tint: string, seed: number): PdfNode[] {
+  const rand = seededRandom(seed);
+  const nodes: PdfNode[] = [];
+
+  const blotch = (count: number, rMin: number, rMax: number, opacityMax: number) => {
+    for (let i = 0; i < count; i++) {
+      const r1 = rMin + rand() * (rMax - rMin);
+      // Keep each blob's full bounding circle inside the page rect — pdfmake measures
+      // the background canvas's own bounding box and fails to render the whole
+      // background (throwing, not just clipping) if it overshoots the reserved
+      // full-page height, which edge-positioned blobs would otherwise do.
+      const cx = r1 + rand() * Math.max(0, w - 2 * r1);
+      const cy = r1 + rand() * Math.max(0, h - 2 * r1);
+      nodes.push(
+        ...softBlob(
+          cx,
+          cy,
+          r1,
+          r1 * (0.6 + rand() * 0.4),
+          shade(tint, rand() > 0.5 ? 0.3 : -0.12),
+          opacityMax * 0.5 + rand() * opacityMax * 0.5,
+        ),
+      );
+    }
+  };
+
+  blotch(Math.max(16, Math.round((w * h) / 24000)), 55, 120, 0.03);
+  blotch(Math.max(45, Math.round((w * h) / 3600)), 8, 22, 0.025);
+
+  return nodes;
+}
+
 export function companyContactLines(data: QuotationPdfData): string[] {
   const c = data.company;
   return [
@@ -488,7 +527,7 @@ export function termsNotesBlock(data: QuotationPdfData, theme: PdfTheme): PdfNod
   });
 
   return {
-    margin: [0, 16, 0, 0],
+    margin: [0, 12, 0, 0],
     stack: [
       terms.length
         ? {
@@ -522,31 +561,23 @@ export function bankDetailsBlock(data: QuotationPdfData, theme: PdfTheme): PdfNo
     margin: [0, 0, 0, 3],
   });
   const bankLine = [b.bankName, b.branch].filter(Boolean).join(', ');
+  const acLine = [`A/C No: ${b.accountNumber}`, `IFSC: ${b.ifsc}`].join('   ·   ');
 
   return {
-    margin: [0, 14, 0, 0],
+    margin: [0, 10, 0, 0],
     unbreakable: true,
-    stack: [
-      heading('Bank details'),
+    columns: [
       {
-        columns: [
-          {
-            width: '*',
-            stack: [
-              { text: b.accountName, fontSize: 9, bold: true, color: theme.text },
-              bankLine ? { text: bankLine, fontSize: 8.5, color: theme.muted } : null,
-            ].filter(Boolean),
-          },
-          {
-            width: 230,
-            stack: [
-              { text: `A/C No: ${b.accountNumber}`, fontSize: 8.5, color: theme.muted },
-              { text: `IFSC: ${b.ifsc}`, fontSize: 8.5, color: theme.muted },
-              b.upiId ? { text: `UPI: ${b.upiId}`, fontSize: 8.5, color: theme.muted } : null,
-            ].filter(Boolean),
-          },
-        ],
+        width: 260,
+        stack: [
+          heading('Bank details'),
+          { text: b.accountName, fontSize: 9, bold: true, color: theme.text },
+          bankLine ? { text: bankLine, fontSize: 8.5, color: theme.muted } : null,
+          { text: acLine, fontSize: 8.5, color: theme.muted, margin: [0, 1, 0, 0] },
+          b.upiId ? { text: `UPI: ${b.upiId}`, fontSize: 8.5, color: theme.muted } : null,
+        ].filter(Boolean),
       },
+      { width: '*', text: '' },
     ],
   };
 }
@@ -594,6 +625,9 @@ export function pageFooter(data: QuotationPdfData, theme: PdfTheme) {
   });
 }
 
+const A4_W = 595.28;
+const A4_H = 841.89;
+
 /** Standard page setup shared by all templates. */
 export const PAGE = {
   pageSize: 'A4',
@@ -607,9 +641,12 @@ export function composeQuotation(
   theme: PdfTheme,
   opts: {
     header: PdfNode;
-    background?: PdfNode;
+    /** Extra canvas shapes drawn only on page 1 (e.g. the coloured header band), on top of the page wash. */
+    headerBackground?: PdfNode[];
     /** Vertical gap between the header and the party block. */
     headerGap?: number;
+    /** Seed for the faint full-page paper-grain wash — vary per template so they don't all look identical. */
+    washSeed?: number;
   },
 ): Record<string, unknown> {
   return {
@@ -619,13 +656,16 @@ export function composeQuotation(
       author: data.company.name,
       subject: data.projectName,
     },
-    // pdfmake re-runs `background` on every page — without gating by page number, a
-    // multi-page document would repeat the dark/coloured header band (meant only for
-    // the page-1 letterhead) behind continuation pages, making body text and the
-    // signature block illegible wherever they land.
-    background: opts.background
-      ? (currentPage: number) => (currentPage === 1 ? opts.background : undefined)
-      : undefined,
+    // Every page gets the faint paper-grain wash; the stronger header band (band/luxury
+    // layouts) only ever draws on page 1 — without gating by page number, a multi-page
+    // document would repeat the dark/coloured band behind continuation pages, making
+    // body text and the signature block illegible wherever they land.
+    background: (currentPage: number) => ({
+      canvas: [
+        ...pageWash(A4_W, A4_H, theme.primary, opts.washSeed ?? 11),
+        ...(currentPage === 1 ? (opts.headerBackground ?? []) : []),
+      ],
+    }),
     footer: pageFooter(data, theme),
     content: [
       opts.header,
@@ -635,6 +675,7 @@ export function composeQuotation(
       itemsTable(data, theme),
       totalsBlock(data, theme),
       termsNotesBlock(data, theme),
+      { text: '', pageBreak: 'after' },
       bankDetailsBlock(data, theme),
       signatureBlock(data, theme),
     ],
