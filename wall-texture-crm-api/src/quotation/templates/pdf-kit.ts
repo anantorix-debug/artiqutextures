@@ -605,6 +605,66 @@ export function bankDetailsBlock(data: QuotationPdfData, theme: PdfTheme): PdfNo
   };
 }
 
+/**
+ * Company letterhead / header block rendered at the top of the second page
+ * (above the bank details & signature section).
+ */
+export function continuationHeader(data: QuotationPdfData, theme: PdfTheme): PdfNode {
+  const label = (data.docLabel ?? 'Quotation').toUpperCase();
+  return {
+    margin: [0, 0, 0, 16],
+    stack: [
+      {
+        columns: [
+          { width: 100, ...logoBlock(data, theme, 48) },
+          {
+            width: '*',
+            stack: [
+              { text: data.company.name, fontSize: 14, bold: true, color: theme.primary },
+              data.company.tagline
+                ? { text: data.company.tagline, fontSize: 8, italics: true, color: theme.accent, margin: [0, 1, 0, 2] }
+                : null,
+              ...companyContactLines(data).map((l) => ({
+                text: l,
+                fontSize: 8,
+                color: theme.muted,
+                lineHeight: 1.25,
+              })),
+            ].filter(Boolean),
+          },
+          {
+            width: 170,
+            stack: [
+              {
+                text: label,
+                fontSize: label.length > 10 ? 14 : 18,
+                bold: true,
+                alignment: 'right',
+                color: theme.primary,
+                characterSpacing: 1.5,
+              },
+              { text: data.quotationNumber, fontSize: 10, bold: true, alignment: 'right', color: theme.accent },
+              {
+                text: `Date: ${fmtDate(data.quotationDate)}   ·   Valid until: ${fmtDate(data.validUntil)}`,
+                fontSize: 7.5,
+                alignment: 'right',
+                color: theme.muted,
+                margin: [0, 2, 0, 0],
+              },
+            ],
+          },
+        ],
+        columnGap: 10,
+      },
+      {
+        canvas: [
+          { type: 'line', x1: 0, y1: 10, x2: 523, y2: 10, lineWidth: 1.5, lineColor: theme.primary },
+        ],
+      },
+    ],
+  };
+}
+
 export function signatureBlock(data: QuotationPdfData, theme: PdfTheme): PdfNode {
   const sig = (label: string, sub?: string): PdfNode => ({
     width: '*',
@@ -704,6 +764,7 @@ export function composeQuotation(
       totalsBlock(data, theme),
       termsNotesBlock(data, theme),
       { text: '', pageBreak: 'after' },
+      continuationHeader(data, theme),
       bankDetailsBlock(data, theme),
       signatureBlock(data, theme),
     ],
