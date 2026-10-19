@@ -25,6 +25,8 @@ export interface PdfTheme {
   totalText: string;
   /** 'grid' = full borders, 'lines' = horizontal hairlines only. */
   tableStyle: 'grid' | 'lines';
+  /** Full-page lime-wash plaster photo background — brand-specific (each brand supplies its own). */
+  backdropUrl?: string;
 }
 
 const inr = new Intl.NumberFormat('en-IN', {
@@ -680,7 +682,7 @@ export function composeQuotation(
     // body text and the signature block illegible wherever they land.
     background: (currentPage: number) => [
       {
-        image: QUOTATION_BACKDROP_DATA_URL,
+        image: theme.backdropUrl ?? QUOTATION_BACKDROP_DATA_URL,
         width: A4_W,
         height: A4_H,
         absolutePosition: { x: 0, y: 0 },

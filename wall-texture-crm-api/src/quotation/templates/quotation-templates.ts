@@ -10,6 +10,8 @@ import {
   limeWashBackdrop,
   logoBlock,
 } from './pdf-kit';
+import { ARTIQU_BACKDROP_DATA_URL } from './quotation-backdrop-artiqu.asset';
+import { TFT_BACKDROP_DATA_URL } from './quotation-backdrop-tft.asset';
 
 const PAGE_W = 595.28;
 
@@ -268,43 +270,43 @@ const luxury =
 const A_CLASSIC: Look = {
   primary: '#1f2a44', accent: '#a06a2c', text: '#1b1b1b', muted: '#555b66', line: '#c9ccd3',
   tableHeadBg: '#1f2a44', tableHeadText: '#ffffff', zebra: '#f6f7f9', totalBg: '#1f2a44', totalText: '#ffffff',
-  tableStyle: 'grid', onDark: '#ffffff', onDarkSub: '#ccd0dd', onDarkText: '#eef0f6',
+  tableStyle: 'grid', onDark: '#ffffff', onDarkSub: '#ccd0dd', onDarkText: '#eef0f6', backdropUrl: ARTIQU_BACKDROP_DATA_URL,
 };
 const A_BAND: Look = {
   primary: '#9c3d1a', accent: '#c7702f', text: '#2a211b', muted: '#6b5b50', line: '#e4d6c8',
   tableHeadBg: '#9c3d1a', tableHeadText: '#ffffff', zebra: '#fbf5ee', totalBg: '#9c3d1a', totalText: '#ffffff',
-  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#f0d3b5', onDarkText: '#f6e6d4',
+  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#f0d3b5', onDarkText: '#f6e6d4', backdropUrl: ARTIQU_BACKDROP_DATA_URL,
 };
 const A_MINIMAL: Look = {
   primary: '#111827', accent: '#0f766e', text: '#111827', muted: '#6b7280', line: '#d9dde3',
   tableHeadBg: '#ffffff', tableHeadText: '#111827', totalBg: '#111827', totalText: '#ffffff',
-  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#cccccc', onDarkText: '#eeeeee',
+  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#cccccc', onDarkText: '#eeeeee', backdropUrl: ARTIQU_BACKDROP_DATA_URL,
 };
 const A_LUXURY: Look = {
   primary: '#1c1a17', accent: '#b8893a', text: '#1c1a17', muted: '#5f5a52', line: '#dccfb6',
   tableHeadBg: '#1c1a17', tableHeadText: '#e9cf94', zebra: '#faf6ec', totalBg: '#1c1a17', totalText: '#e9cf94',
-  tableStyle: 'lines', onDark: '#e9cf94', onDarkSub: '#b8a37a', onDarkText: '#cfc4ad',
+  tableStyle: 'lines', onDark: '#e9cf94', onDarkSub: '#b8a37a', onDarkText: '#cfc4ad', backdropUrl: ARTIQU_BACKDROP_DATA_URL,
 };
 
 const T_BAND: Look = {
   primary: '#c2410c', accent: '#ea7a1c', text: '#2b1d14', muted: '#6f5a4a', line: '#f1d5b8',
   tableHeadBg: '#c2410c', tableHeadText: '#ffffff', zebra: '#fff5ea', totalBg: '#c2410c', totalText: '#ffffff',
-  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#ffe3c7', onDarkText: '#ffeedb',
+  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#ffe3c7', onDarkText: '#ffeedb', backdropUrl: TFT_BACKDROP_DATA_URL,
 };
 const T_CLASSIC: Look = {
   primary: '#7c2d12', accent: '#ea7a1c', text: '#231815', muted: '#665247', line: '#e6cdb8',
   tableHeadBg: '#7c2d12', tableHeadText: '#ffffff', zebra: '#fff7ef', totalBg: '#7c2d12', totalText: '#ffffff',
-  tableStyle: 'grid', onDark: '#ffffff', onDarkSub: '#ffe3c7', onDarkText: '#ffeedb',
+  tableStyle: 'grid', onDark: '#ffffff', onDarkSub: '#ffe3c7', onDarkText: '#ffeedb', backdropUrl: TFT_BACKDROP_DATA_URL,
 };
 const T_MINIMAL: Look = {
   primary: '#1c1917', accent: '#c2410c', text: '#1c1917', muted: '#78716c', line: '#e7e0d8',
   tableHeadBg: '#ffffff', tableHeadText: '#1c1917', totalBg: '#c2410c', totalText: '#ffffff',
-  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#cccccc', onDarkText: '#eeeeee',
+  tableStyle: 'lines', onDark: '#ffffff', onDarkSub: '#cccccc', onDarkText: '#eeeeee', backdropUrl: TFT_BACKDROP_DATA_URL,
 };
 const T_LUXURY: Look = {
   primary: '#231815', accent: '#ea7a1c', text: '#231815', muted: '#6b5548', line: '#f0d2b0',
   tableHeadBg: '#231815', tableHeadText: '#ffd9b0', zebra: '#fff6ec', totalBg: '#231815', totalText: '#ffd9b0',
-  tableStyle: 'lines', onDark: '#ffd9b0', onDarkSub: '#d9a36b', onDarkText: '#e8cdb0',
+  tableStyle: 'lines', onDark: '#ffd9b0', onDarkSub: '#d9a36b', onDarkText: '#e8cdb0', backdropUrl: TFT_BACKDROP_DATA_URL,
 };
 
 export const TEMPLATE_BUILDERS: Record<QuotationTemplateCode, Builder> = {

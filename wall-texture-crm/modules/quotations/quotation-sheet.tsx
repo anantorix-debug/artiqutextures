@@ -229,6 +229,25 @@ function ContactLines({ company, color, align }: { company: CompanyProfile | nul
   );
 }
 
+/** Compact bank summary under the company contact lines — mirrors headerBankLines() in pdf-kit.ts. */
+function BankLines({ company, color, align }: { company: CompanyProfile | null; color: string; align?: "right" }) {
+  if (!company?.bankAccountName || !company?.bankAccountNumber) return null;
+  const bankLine = [company.bankName, company.bankBranch].filter(Boolean).join(", ");
+  const acLine = [
+    `A/C ${company.bankAccountNumber}`,
+    `IFSC ${company.bankIfsc}`,
+    company.bankUpiId ? `UPI ${company.bankUpiId}` : null,
+  ]
+    .filter(Boolean)
+    .join("   ·   ");
+  return (
+    <div style={{ color, fontSize: 11, lineHeight: 1.45, textAlign: align, marginTop: 4 }}>
+      <div>{company.bankAccountName}{bankLine ? ` — ${bankLine}` : ""}</div>
+      <div>{acLine}</div>
+    </div>
+  );
+}
+
 function TitleBlock({ d, color, sub, size = 26 }: { d: SheetData; color: string; sub: string; size?: number }) {
   return (
     <div style={{ textAlign: "right", flexShrink: 0, whiteSpace: "nowrap" }}>
@@ -264,6 +283,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
             <div style={{ color: "#fff", fontSize: 24, fontWeight: 800, letterSpacing: 2.5 }}>{name.toUpperCase()}</div>
             <div style={{ color: "#ffe3c7", fontSize: 11.5, marginBottom: 4 }}>{tagline}</div>
             <ContactLines company={company} color="#ffeedb" />
+            <BankLines company={company} color="#ffeedb" />
           </div>
           <div style={{ textAlign: "right", flexShrink: 0, whiteSpace: "nowrap", marginTop: 10 }}>
             <div style={{ color: "#fff", fontSize: 20, fontWeight: 700, letterSpacing: 3 }}>QUOTATION</div>
@@ -282,6 +302,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
             <div style={{ color: "#fff", fontSize: 21, fontWeight: 700 }}>{name}</div>
             <div style={{ color: "#f0d3b5", fontSize: 11, marginBottom: 4 }}>{tagline}</div>
             <ContactLines company={company} color="#f6e6d4" />
+            <BankLines company={company} color="#f6e6d4" />
           </div>
           <TitleBlock d={d} color="#fff" sub="#f0d3b5" size={24} />
         </div>
@@ -297,6 +318,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
             <div style={{ color: p.dk?.title ?? "#e9cf94", fontSize: 19, fontWeight: 700, letterSpacing: 2 }}>{name.toUpperCase()}</div>
             <div style={{ color: p.dk?.sub ?? "#b8a37a", fontSize: 11, marginBottom: 4 }}>{tagline}</div>
             <ContactLines company={company} color={p.dk?.text ?? "#cfc4ad"} />
+            <BankLines company={company} color={p.dk?.text ?? "#cfc4ad"} />
           </div>
           <TitleBlock d={d} color={p.dk?.title ?? "#e9cf94"} sub={p.dk?.sub ?? "#b8a37a"} size={24} />
         </div>
@@ -311,6 +333,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
           <div style={{ textAlign: "right" }}>
             <div style={{ color: p.text, fontSize: 16, fontWeight: 700 }}>{name}</div>
             <ContactLines company={company} color={p.muted} align="right" />
+            <BankLines company={company} color={p.muted} align="right" />
           </div>
         </div>
         <div style={{ color: p.text, fontSize: 42, fontWeight: 300, marginTop: 28, letterSpacing: -1 }}>Quotation</div>
@@ -332,6 +355,7 @@ function Header({ theme, d, company, p }: { theme: SheetTheme; d: SheetData; com
           <div style={{ color: p.primary, fontSize: 21, fontWeight: 700 }}>{name}</div>
           <div style={{ color: p.accent, fontSize: 11, fontStyle: "italic", marginBottom: 4 }}>{tagline}</div>
           <ContactLines company={company} color={p.muted} />
+          <BankLines company={company} color={p.muted} />
         </div>
         <TitleBlock d={d} color={p.primary} sub={p.muted} />
       </div>
@@ -355,6 +379,8 @@ export function QuotationSheet({
   const terms = company?.defaultTerms ? toLines(company.defaultTerms) : data.terms;
   const notes = company?.defaultNotes || data.notes;
   const d = { ...data, terms, notes };
+  const isTftBrand = theme === "TIME_FOR_TEXTURE" || theme.startsWith("TFT_");
+  const backdropJpg = isTftBrand ? "/quotation-backdrop-tft.jpg" : "/quotation-backdrop-artiqu.jpg";
   const cell = { padding: "8px 8px", borderBottom: `1px solid ${p.line}` } as const;
   const gridBorder = p.grid ? `1px solid ${p.line}` : undefined;
 
@@ -372,7 +398,7 @@ export function QuotationSheet({
       style={{
         width: SHEET_W,
         height: SHEET_H,
-        background: "url('/quotation-backdrop.jpg') center/cover no-repeat, #f8f5ee",
+        background: `url('${backdropJpg}') center/cover no-repeat, #f8f5ee`,
         color: p.text,
         fontFamily: "Roboto, Inter, system-ui, sans-serif",
         fontSize: 12,
