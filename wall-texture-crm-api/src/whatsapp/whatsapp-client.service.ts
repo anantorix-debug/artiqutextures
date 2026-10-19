@@ -188,6 +188,15 @@ export class WhatsappClientService implements OnModuleInit {
       );
       await this.updateSession({ status: 'DISCONNECTED', isConnected: false });
       this.client = null;
+      // A fresh container can race the previous one's Chrome process releasing its
+      // profile lock (seen as "profile appears to be in use" immediately on launch,
+      // not after connecting) — unlike the 'disconnected' event and the ready
+      // watchdog, a launch failure here previously had no retry at all, leaving
+      // WhatsApp stuck until someone noticed and reconnected by hand.
+      if (!this.manualLogout) {
+        this.logger.log('Retrying WhatsApp launch in 8s...');
+        setTimeout(() => void this.initialize(), 8_000);
+      }
     }
   }
 
