@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
+import { existsSync, unlinkSync } from 'fs';
+import { isAbsolute, join } from 'path';
 // whatsapp-web.js ships no first-class ESM/TS types for this import shape.
 
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
@@ -26,6 +28,13 @@ export class WhatsappClientService implements OnModuleInit {
   private client: any = null;
   private manualLogout = false;
   private readonly sessionName: string;
+  /**
+   * whatsapp-web.js has a known upstream issue (usually after a WhatsApp Web
+   * release) where 'authenticated' fires but 'ready' never does, leaving the
+   * client stuck forever with no error. This watchdog self-heals instead of
+   * requiring someone to notice and restart the server by hand.
+   */
+  private readyWatchdog: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly configService: ConfigService,
@@ -102,9 +111,11 @@ export class WhatsappClientService implements OnModuleInit {
 
     this.client.on('authenticated', async () => {
       this.logger.log('WhatsApp authenticated');
+      this.armReadyWatchdog(sessionDir, sessionName);
     });
 
     this.client.on('ready', async () => {
+      this.clearReadyWatchdog();
       const info = this.client.info;
       await this.updateSession({
         status: 'CONNECTED',
@@ -117,6 +128,7 @@ export class WhatsappClientService implements OnModuleInit {
     });
 
     this.client.on('auth_failure', async (message: string) => {
+      this.clearReadyWatchdog();
       await this.updateSession({
         status: 'AUTH_FAILED',
         isConnected: false,
@@ -133,6 +145,7 @@ export class WhatsappClientService implements OnModuleInit {
     });
 
     this.client.on('disconnected', async (reason: string) => {
+      this.clearReadyWatchdog();
       await this.updateSession({
         status: 'DISCONNECTED',
         isConnected: false,
@@ -165,8 +178,61 @@ export class WhatsappClientService implements OnModuleInit {
     }
   }
 
+  private clearReadyWatchdog() {
+    if (this.readyWatchdog) {
+      clearTimeout(this.readyWatchdog);
+      this.readyWatchdog = null;
+    }
+  }
+
+  /** If 'ready' doesn't follow 'authenticated' within 60s, the client is stuck — restart it. */
+  private armReadyWatchdog(sessionDir: string, sessionName: string) {
+    this.clearReadyWatchdog();
+    this.readyWatchdog = setTimeout(() => {
+      this.logger.warn(
+        'WhatsApp authenticated but never became ready within 60s — restarting the client automatically',
+      );
+      void this.restartStuckClient(sessionDir, sessionName);
+    }, 60_000);
+  }
+
+  /** Force-clears the stuck client and its Chrome profile lock, then reconnects from scratch. */
+  private async restartStuckClient(sessionDir: string, sessionName: string) {
+    const stuckClient = this.client;
+    this.client = null;
+    this.clearReadyWatchdog();
+    try {
+      await Promise.race([
+        stuckClient?.destroy(),
+        new Promise((resolve) => setTimeout(resolve, 8_000)),
+      ]);
+    } catch {
+      // best-effort — the lock files are cleared below regardless, so a leftover
+      // Chrome process won't block the next launch.
+    }
+    this.clearChromeLocks(sessionDir, sessionName);
+    await this.updateSession({ status: 'INITIALIZING' });
+    void this.initialize();
+  }
+
+  private clearChromeLocks(sessionDir: string, sessionName: string) {
+    const base = isAbsolute(sessionDir)
+      ? sessionDir
+      : join(process.cwd(), sessionDir);
+    const dir = join(base, `session-${sessionName}`);
+    for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+      try {
+        const p = join(dir, name);
+        if (existsSync(p)) unlinkSync(p);
+      } catch {
+        // best-effort
+      }
+    }
+  }
+
   async logout(): Promise<void> {
     this.manualLogout = true;
+    this.clearReadyWatchdog();
     if (this.client) {
       await this.client.logout().catch(() => undefined);
       this.client = null;
