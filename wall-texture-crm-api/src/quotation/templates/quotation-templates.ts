@@ -6,6 +6,7 @@ import {
   companyContactLines,
   composeQuotation,
   fmtDate,
+  limeWashBackdrop,
   logoBlock,
 } from './pdf-kit';
 
@@ -107,13 +108,15 @@ const classic =
 // Layout 2 — Band: full-bleed coloured header band with stripe accents
 // ---------------------------------------------------------------------------
 const band =
-  (t: Look, opts: { wordmark?: boolean } = {}): Builder =>
+  (t: Look, opts: { wordmark?: boolean; seed?: number } = {}): Builder =>
   (data) =>
     composeQuotation(data, t, {
       headerGap: 44,
       background: {
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: PAGE_W, h: 134, color: t.primary },
+          // Lime-wash plaster backdrop — a textured finish rather than a flat
+          // printed colour block, matching the brand's own surface work.
+          ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, opts.seed ?? 7),
           { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 5, color: t.accent },
           { type: 'rect', x: 0, y: 139, w: PAGE_W, h: 2, color: '#e6c9a8' },
           ...(opts.wordmark
@@ -197,13 +200,15 @@ const minimal =
 // Layout 4 — Luxury: dark band, spaced capitals, thin accent rules
 // ---------------------------------------------------------------------------
 const luxury =
-  (t: Look): Builder =>
+  (t: Look, seed = 7): Builder =>
   (data) =>
     composeQuotation(data, t, {
       headerGap: 44,
       background: {
         canvas: [
-          { type: 'rect', x: 0, y: 0, w: PAGE_W, h: 134, color: t.primary },
+          // Lime-wash plaster backdrop — a textured finish rather than a flat
+          // printed colour block, matching the brand's own surface work.
+          ...limeWashBackdrop(0, 0, PAGE_W, 134, t.primary, seed),
           { type: 'rect', x: 36, y: 128, w: PAGE_W - 72, h: 1, color: t.accent },
           { type: 'rect', x: 0, y: 134, w: PAGE_W, h: 3, color: t.accent },
         ],
@@ -274,15 +279,15 @@ const T_LUXURY: Look = {
 
 export const TEMPLATE_BUILDERS: Record<QuotationTemplateCode, Builder> = {
   // Artiqu Surface
-  ARTIQUE_SURFACE: band(A_BAND),
+  ARTIQUE_SURFACE: band(A_BAND, { seed: 7 }),
   CLASSIC: classic(A_CLASSIC),
   MODERN_MINIMAL: minimal(A_MINIMAL),
-  LUXURY_TEXTURE: luxury(A_LUXURY),
+  LUXURY_TEXTURE: luxury(A_LUXURY, 23),
   // Time For Texture (separate brand)
-  TIME_FOR_TEXTURE: band(T_BAND, { wordmark: true }),
+  TIME_FOR_TEXTURE: band(T_BAND, { wordmark: true, seed: 41 }),
   TFT_CLASSIC: classic(T_CLASSIC),
   TFT_MINIMAL: minimal(T_MINIMAL),
-  TFT_LUXURY: luxury(T_LUXURY),
+  TFT_LUXURY: luxury(T_LUXURY, 59),
 };
 
 /** Display metadata — used to seed/refresh the quotation_templates table. */

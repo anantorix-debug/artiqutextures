@@ -63,13 +63,8 @@ export interface QuotationPdfData {
 }
 
 export const DEFAULT_TERMS = [
-  '50% advance payment required to confirm the order, balance on completion.',
-  'Prices are valid for the validity period mentioned above.',
-  'Material wastage, if any, will be billed separately.',
-  'Any change in scope of work will be quoted separately.',
-  'Warranty as per manufacturer terms for the applied product.',
-  'Scaffolding must be provided by the client wherever rope scaffolding is not possible.',
-  'GST @ 18% will be applicable additionally over the quoted price.',
-  'Any rework required after completion of the texture work will be charged additionally.',
-  'Rates are based on the square footage provided; final measurement will be taken after completion of work, with an approximate variance of ±10%.',
+  'Scaffolding: The client shall arrange and provide scaffolding wherever rope access scaffolding is not feasible.',
+  'GST: GST at 18% shall be charged additionally over and above the quoted price.',
+  'Additional Rework: Any rework or rectification required after completion of the texture work shall be charged separately.',
+  'Measurement & Billing: The quotation is based on the square footage provided by the client. Final measurements shall be taken upon completion of the work, and the final bill may vary by approximately ±10% based on the actual measured area.',
 ].join('\n');

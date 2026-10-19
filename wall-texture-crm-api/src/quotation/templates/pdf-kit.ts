@@ -143,6 +143,118 @@ export function logoBlock(
   };
 }
 
+/** Deterministic PRNG (mulberry32) — same seed always produces the same sequence,
+ * so a given template's backdrop renders identically every time rather than
+ * looking different on every PDF. */
+function seededRandom(seed: number): () => number {
+  let state = seed | 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Lightens (amount > 0) or darkens (amount < 0) a hex color, amount in -1..1. */
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const mix = (c: number) =>
+    Math.max(0, Math.min(255, Math.round(amount >= 0 ? c + (255 - c) * amount : c * (1 + amount))));
+  const r = mix((n >> 16) & 0xff);
+  const g = mix((n >> 8) & 0xff);
+  const b = mix(n & 0xff);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * A single soft-edged blotch: pdfmake's ellipses have hard edges (no blur), so
+ * the soft radial falloff is faked with 3 concentric rings — a large, very
+ * faint outer ring, shrinking to a smaller, slightly stronger core — rather
+ * than one flat-opacity circle, which would read as a crisp "bubble".
+ */
+function softBlob(
+  cx: number,
+  cy: number,
+  r1: number,
+  r2: number,
+  color: string,
+  peakOpacity: number,
+): PdfNode[] {
+  const rings: [scale: number, opacityFactor: number][] = [
+    [1, 0.3],
+    [0.62, 0.62],
+    [0.3, 1],
+  ];
+  return rings.map(([scale, opacityFactor]) => ({
+    type: 'ellipse',
+    x: cx,
+    y: cy,
+    r1: r1 * scale,
+    r2: r2 * scale,
+    color,
+    fillOpacity: peakOpacity * opacityFactor,
+  }));
+}
+
+/**
+ * Procedural lime-wash plaster backdrop for a coloured header band — two
+ * layers of soft mottled blotches (broad cloudy patches, then finer grain on
+ * top) plus faint vertical trowel streaks over the solid base colour,
+ * evoking the brand's own hand-applied lime-wash finish instead of a flat
+ * printed colour block. Deterministic per `seed` so a given template always
+ * renders the same way.
+ */
+export function limeWashBackdrop(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  baseColor: string,
+  seed = 7,
+): PdfNode[] {
+  const rand = seededRandom(seed);
+  const nodes: PdfNode[] = [{ type: 'rect', x, y, w, h, color: baseColor }];
+
+  const blotch = (count: number, rMin: number, rMax: number, opacityMax: number) => {
+    for (let i = 0; i < count; i++) {
+      const r1 = rMin + rand() * (rMax - rMin);
+      const lighter = rand() > 0.4; // reads mostly cloudy/lighter, with occasional deeper pooling
+      nodes.push(
+        ...softBlob(
+          x + rand() * w,
+          y + rand() * h,
+          r1,
+          r1 * (0.6 + rand() * 0.4),
+          shade(baseColor, lighter ? 0.16 + rand() * 0.26 : -(0.07 + rand() * 0.13)),
+          (opacityMax * 0.55 + rand() * opacityMax * 0.45) * (lighter ? 1 : 0.7),
+        ),
+      );
+    }
+  };
+
+  // broad, very faint cloudy variation, then finer grain layered on top
+  blotch(Math.max(7, Math.round((w * h) / 16000)), 46, 95, 0.05);
+  blotch(Math.max(30, Math.round((w * h) / 2200)), 7, 20, 0.055);
+
+  const streaks = Math.max(5, Math.round(w / 85));
+  for (let i = 0; i < streaks; i++) {
+    const sx = x + (w / streaks) * (i + 0.5) + (rand() - 0.5) * 20;
+    nodes.push({
+      type: 'line',
+      x1: sx,
+      y1: y,
+      x2: sx + (rand() - 0.5) * 14,
+      y2: y + h,
+      lineWidth: 1 + rand() * 1.6,
+      lineColor: shade(baseColor, rand() > 0.5 ? 0.22 : -0.1),
+      strokeOpacity: 0.03 + rand() * 0.03,
+    });
+  }
+
+  return nodes;
+}
+
 export function companyContactLines(data: QuotationPdfData): string[] {
   const c = data.company;
   return [
