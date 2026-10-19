@@ -372,7 +372,7 @@ export function QuotationSheet({
       style={{
         width: SHEET_W,
         height: SHEET_H,
-        background: bodyLimeWashBg(),
+        background: "url('/quotation-backdrop.jpg') center/cover no-repeat, #f8f5ee",
         color: p.text,
         fontFamily: "Roboto, Inter, system-ui, sans-serif",
         fontSize: 12,

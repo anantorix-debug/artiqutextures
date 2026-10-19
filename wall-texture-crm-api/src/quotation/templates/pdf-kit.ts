@@ -1,4 +1,5 @@
 import { QuotationPdfData } from './quotation-pdf.types';
+import { QUOTATION_BACKDROP_DATA_URL } from './quotation-backdrop.asset';
 
 /**
  * Shared building blocks for every quotation template. Each template supplies
@@ -682,12 +683,17 @@ export function composeQuotation(
     // layouts) only ever draws on page 1 — without gating by page number, a multi-page
     // document would repeat the dark/coloured band behind continuation pages, making
     // body text and the signature block illegible wherever they land.
-    background: (currentPage: number) => ({
-      canvas: [
-        ...pageWash(A4_W, A4_H, theme.primary, opts.washSeed ?? 11),
-        ...(currentPage === 1 ? (opts.headerBackground ?? []) : []),
-      ],
-    }),
+    background: (currentPage: number) => [
+      {
+        image: QUOTATION_BACKDROP_DATA_URL,
+        width: A4_W,
+        height: A4_H,
+        absolutePosition: { x: 0, y: 0 },
+      },
+      ...(currentPage === 1 && opts.headerBackground?.length
+        ? [{ canvas: opts.headerBackground }]
+        : []),
+    ],
     footer: pageFooter(data, theme),
     content: [
       opts.header,
