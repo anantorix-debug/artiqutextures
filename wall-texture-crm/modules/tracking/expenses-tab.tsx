@@ -50,14 +50,17 @@ function ExpenseDialog({
   const [removeReceipt, setRemoveReceipt] = useState(false);
 
   const n = Number(amount);
-  const valid = description.trim().length > 0 && Number.isFinite(n) && n >= 0 && amount !== "";
+  const valid = Number.isFinite(n) && n >= 0 && amount.trim() !== "";
   const pending = create.isPending || update.isPending;
 
   function submit() {
+    const defaultDesc =
+      [formatStatusLabel(category), vendor.trim()].filter(Boolean).join(" — ") ||
+      `${formatStatusLabel(category)} expense`;
     const values = {
       expenseDate: date || undefined,
       category,
-      description: description.trim(),
+      description: description.trim() || defaultDesc,
       amount: n,
       paidBy: paidBy.trim(),
       vendor: vendor.trim(),
@@ -93,8 +96,8 @@ function ExpenseDialog({
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Description" className="sm:col-span-2">
-            <Input placeholder="e.g. Plaster bags — 40 kg × 25" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Field label="Description" hint="Optional — defaults to category if blank" className="sm:col-span-2">
+            <Input placeholder={`e.g. ${formatStatusLabel(category)} expense`} value={description} onChange={(e) => setDescription(e.target.value)} />
           </Field>
           <Field label="Amount (₹)">
             <Input type="number" min={0} step="0.01" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />

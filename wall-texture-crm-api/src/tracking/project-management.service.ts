@@ -195,11 +195,18 @@ export class ProjectManagementService {
     userId?: string,
   ) {
     await this.ensureProject(projectId);
-    const { removeReceipt: _ignored, ...rest } = dto;
+    const { removeReceipt: _ignored, ...rest } = dto as any;
     void _ignored;
+    const desc =
+      dto.description?.trim() ||
+      [dto.category?.toLowerCase()?.replace(/_/g, ' '), dto.vendor?.trim()]
+        .filter(Boolean)
+        .join(' — ') ||
+      'Expense';
     const expense = await this.prisma.projectExpense.create({
       data: {
         ...rest,
+        description: desc,
         projectId,
         expenseDate: dto.expenseDate ? new Date(dto.expenseDate) : new Date(),
         receiptUrl,

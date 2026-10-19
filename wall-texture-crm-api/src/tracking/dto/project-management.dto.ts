@@ -33,11 +33,12 @@ export class CreateExpenseDto {
   @IsEnum(ExpenseCategory)
   category: ExpenseCategory;
 
-  @ApiProperty()
-  @IsNotEmpty()
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsOptional()
   @IsString()
   @MaxLength(255)
-  description: string;
+  description?: string;
 
   @ApiProperty({ example: 4500 })
   @Type(() => Number)
