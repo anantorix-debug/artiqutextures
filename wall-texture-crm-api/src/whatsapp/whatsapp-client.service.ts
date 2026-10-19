@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as QRCode from 'qrcode';
-import { existsSync, unlinkSync } from 'fs';
+import { lstatSync, unlinkSync } from 'fs';
 import { isAbsolute, join } from 'path';
 // whatsapp-web.js ships no first-class ESM/TS types for this import shape.
 
@@ -243,11 +243,17 @@ export class WhatsappClientService implements OnModuleInit {
       : join(process.cwd(), sessionDir);
     const dir = join(base, `session-${sessionName}`);
     for (const name of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+      // These are symlinks Chrome uses as lock markers (e.g. SingletonLock ->
+      // "<old-hostname>-<pid>"), left dangling once the container that created
+      // them is gone. existsSync() follows symlinks and reports a dangling one
+      // as "doesn't exist", so it silently skipped deleting the very thing
+      // blocking the next launch — every retry hit the exact same stale lock.
+      // lstatSync sees the symlink itself regardless of what it points to.
       try {
-        const p = join(dir, name);
-        if (existsSync(p)) unlinkSync(p);
+        lstatSync(join(dir, name));
+        unlinkSync(join(dir, name));
       } catch {
-        // best-effort
+        // already gone — nothing to clear
       }
     }
   }
