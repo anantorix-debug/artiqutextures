@@ -41,6 +41,10 @@ export const DEFAULT_TERMS = [
   'Material wastage, if any, will be billed separately.',
   'Any change in scope of work will be quoted separately.',
   'Warranty as per manufacturer terms for the applied product.',
+  'Scaffolding must be provided by the client wherever rope scaffolding is not possible.',
+  'GST @ 18% will be applicable additionally over the quoted price.',
+  'Any rework required after completion of the texture work will be charged additionally.',
+  'Rates are based on the square footage provided; final measurement will be taken after completion of work, with an approximate variance of ±10%.',
 ].join('\n');
 
 const DEFAULTS: CompanyProfile = {
