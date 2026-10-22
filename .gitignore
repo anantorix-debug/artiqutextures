@@ -30,3 +30,6 @@ wall-texture-crm-api/.wwebjs_cache/
 
 # server runtime data (uploads, WhatsApp session, backups)
 deploy/data/
+
+# Local DB backups (contain customer PII — never commit)
+/backups/

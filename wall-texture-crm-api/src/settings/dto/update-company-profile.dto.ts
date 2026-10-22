@@ -10,6 +10,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateCompanyProfileDto {
@@ -37,9 +38,11 @@ export class UpdateCompanyProfileDto {
   @MaxLength(50)
   phone?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'contact@artiqusurface.com' })
   @IsOptional()
+  @ValidateIf((o) => typeof o.email === 'string' && o.email.trim().length > 0)
   @IsEmail()
+  @MaxLength(150)
   email?: string;
 
   @ApiPropertyOptional()
@@ -101,7 +104,12 @@ export class UpdateCompanyProfileDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) tftTagline?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) tftAddress?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(50) tftPhone?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) tftEmail?: string;
+  @ApiPropertyOptional({ example: 'contact@timefortexture.com' })
+  @IsOptional()
+  @ValidateIf((o) => typeof o.tftEmail === 'string' && o.tftEmail.trim().length > 0)
+  @IsEmail()
+  @MaxLength(150)
+  tftEmail?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) tftWebsite?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(30) tftGstNumber?: string;
 

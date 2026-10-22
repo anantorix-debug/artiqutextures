@@ -81,6 +81,8 @@ export function CompanySettings() {
     save.mutate(
       {
         ...values,
+        email: values.email?.trim() ?? "",
+        tftEmail: values.tftEmail?.trim() ?? "",
         defaultValidityDays: Number(values.defaultValidityDays) || 15,
         defaultAdvancePercent: Number(values.defaultAdvancePercent) || 0,
       },
@@ -146,8 +148,8 @@ export function CompanySettings() {
           <Field label="Phone">
             <Input value={values.phone} onChange={(e) => set("phone", e.target.value)} />
           </Field>
-          <Field label="Email">
-            <Input type="email" value={values.email} onChange={(e) => set("email", e.target.value)} />
+          <Field label="Email" hint="Optional. Leave blank if not applicable.">
+            <Input type="email" placeholder="e.g. contact@artiqusurface.com" value={values.email} onChange={(e) => set("email", e.target.value)} />
           </Field>
           <Field label="Website">
             <Input value={values.website} onChange={(e) => set("website", e.target.value)} />
@@ -202,8 +204,8 @@ export function CompanySettings() {
             <Field label="Phone">
               <Input value={values.tftPhone} onChange={(e) => set("tftPhone", e.target.value)} />
             </Field>
-            <Field label="Email">
-              <Input type="email" value={values.tftEmail} onChange={(e) => set("tftEmail", e.target.value)} />
+            <Field label="Email" hint="Optional. Leave blank if not applicable.">
+              <Input type="email" placeholder="e.g. contact@timefortexture.com" value={values.tftEmail} onChange={(e) => set("tftEmail", e.target.value)} />
             </Field>
             <Field label="Website">
               <Input value={values.tftWebsite} onChange={(e) => set("tftWebsite", e.target.value)} />
