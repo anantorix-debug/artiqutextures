@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -144,16 +144,20 @@ export function QuotationForm({
   const installationCharges = form.watch("installationCharges");
   const additionalCharges = form.watch("additionalCharges");
 
-  const totals = useMemo(() => {
-    const subTotal = items.reduce((sum, i) => sum + (Number(i.sqft) || 0) * (Number(i.rate) || 0), 0);
-    const discountAmount =
-      discountType === "PERCENTAGE" ? (subTotal * (Number(discountValue) || 0)) / 100 : Number(discountValue) || 0;
-    const afterDiscount = subTotal - discountAmount;
-    const gstAmount = gstEnabled ? (afterDiscount * (Number(gstPercentage) || 0)) / 100 : 0;
-    const grandTotal =
-      afterDiscount + gstAmount + (Number(transportationCharges) || 0) + (Number(installationCharges) || 0) + (Number(additionalCharges) || 0);
-    return { subTotal, discountAmount, gstAmount, grandTotal };
-  }, [items, discountType, discountValue, gstEnabled, gstPercentage, transportationCharges, installationCharges, additionalCharges]);
+  // Not memoized: form.watch("items") doesn't reliably produce a new array reference when
+  // only a nested field (sqft/rate) changes without the array length changing, so a
+  // useMemo([items, ...]) dependency can miss the update and serve a stale total — this is
+  // cheap arithmetic, not worth that staleness risk. The per-item "Amount" shown in each row
+  // already reads items[index] directly (not memoized), which is why it was always correct
+  // even when this summary total fell behind.
+  const subTotal = items.reduce((sum, i) => sum + (Number(i.sqft) || 0) * (Number(i.rate) || 0), 0);
+  const discountAmount =
+    discountType === "PERCENTAGE" ? (subTotal * (Number(discountValue) || 0)) / 100 : Number(discountValue) || 0;
+  const afterDiscount = subTotal - discountAmount;
+  const gstAmount = gstEnabled ? (afterDiscount * (Number(gstPercentage) || 0)) / 100 : 0;
+  const grandTotal =
+    afterDiscount + gstAmount + (Number(transportationCharges) || 0) + (Number(installationCharges) || 0) + (Number(additionalCharges) || 0);
+  const totals = { subTotal, discountAmount, gstAmount, grandTotal };
 
   function handleSubmit(values: QuotationFormSchema) {
     onSubmit({
